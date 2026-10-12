@@ -33,7 +33,7 @@ Jeśli chcesz, mogę dopisać do tego listę głównych widoków aplikacji albo 
 |---|---|
 | Roman Horbach 58015 | `zefso` |
 | Viktor Levchenko 58088 | `he4tegg` |
-| Volodymyr Petryk 56086 | `ch1l1ntano` |
+| Volodymyr Petruk 56086 | `ch1l1ntano` |
 
 ## Technologie
 
