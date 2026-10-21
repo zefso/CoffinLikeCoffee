@@ -37,9 +37,53 @@ Jeśli chcesz, mogę dopisać do tego listę głównych widoków aplikacji albo 
 
 ## Technologie
 
-- django
+- Django 5
 - HTML5
 - CSS3
-- JavaScript
-- planowane API do przechowywania i pobierania danych o poziomach, grobach oraz postaciach
+- JavaScript (menu mobilne i interakcje)
+- SQLite (baza danych przygotowana pod kolejne moduły)
 
+## Uruchomienie
+
+### Docker (macOS, Windows, Linux)
+
+Najprostszy sposób uruchomienia projektu na macOS to **Docker Desktop**:
+
+1. Zainstaluj i uruchom [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. W terminalu przejdź do katalogu projektu i uruchom:
+
+   ```bash
+   docker compose up --build
+   ```
+
+3. Otwórz `http://localhost:8000/`.
+
+Aby zatrzymać aplikację, użyj `Ctrl+C`. Kontener można uruchomić ponownie poleceniem `docker compose up`. Baza SQLite pozostaje w katalogu projektu.
+
+### Uruchomienie bez Dockera
+
+1. Utwórz i aktywuj środowisko wirtualne:
+
+   ```bash
+   python -m venv .venv
+   ```
+
+   Windows PowerShell:
+
+   ```powershell
+   .venv\Scripts\Activate.ps1
+   ```
+
+2. Zainstaluj zależności:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Uruchom stronę:
+
+   ```bash
+   python manage.py runserver
+   ```
+
+   Następnie otwórz `http://127.0.0.1:8000/`.

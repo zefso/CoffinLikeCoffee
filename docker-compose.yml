@@ -1,0 +1,13 @@
+services:
+  web:
+    build:
+      context: .
+    container_name: horyzont-web
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+    environment:
+      DJANGO_DEBUG: "1"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+    command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8080"

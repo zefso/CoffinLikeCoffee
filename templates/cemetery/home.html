@@ -1,0 +1,88 @@
+{% load static %}
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Wielopoziomowy cmentarz - miejsce pamięci, spokoju i bliskości.">
+  <title>Horyzont | Wielopoziomowy cmentarz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="site-header">
+    <a class="brand" href="#start" aria-label="Horyzont - strona główna">
+      <span class="brand-mark">✦</span>
+      <span><strong>Horyzont</strong><small>miejsce pamięci</small></span>
+    </a>
+    <button class="menu-toggle" aria-label="Otwórz menu" aria-expanded="false"><span></span><span></span></button>
+    <nav class="main-nav">
+      <a href="#poziomy">Poziomy</a>
+      <a href="#jak-dziala">Jak to działa</a>
+      <a href="#kontakt">Kontakt</a>
+      <a class="nav-button" href="#wyszukiwarka">Znajdź miejsce <span>↗</span></a>
+    </nav>
+  </header>
+
+  <main id="start">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> przestrzeń pamięci i spokoju</p>
+        <h1>Każda historia<br>ma swój <em>horyzont.</em></h1>
+        <p class="hero-lead">Wielopoziomowy cmentarz zaprojektowany z troską o ludzi, miejsca i wspomnienia, które pozostają z nami na zawsze.</p>
+        <div class="hero-actions">
+          <a class="button button-dark" href="#poziomy">Poznaj nasze poziomy <span>↘</span></a>
+          <a class="text-link" href="#jak-dziala">Dowiedz się więcej <span>→</span></a>
+        </div>
+      </div>
+      <div class="hero-art" aria-label="Ilustracja spokojnego ogrodu pamięci">
+        <div class="sun"></div><div class="moon"></div>
+        <div class="hill hill-back"></div><div class="hill hill-front"></div>
+        <div class="arch"><span>✦</span></div>
+        <div class="tree tree-left"><i></i><i></i><i></i></div>
+        <div class="tree tree-right"><i></i><i></i><i></i></div>
+        <div class="grave grave-one"></div><div class="grave grave-two"></div><div class="grave grave-three"></div>
+        <div class="hero-note"><span>01</span><span>Ogród Pamięci</span></div>
+      </div>
+    </section>
+
+    <section class="stat-strip">
+      {% for stat in stats %}
+      <div class="stat"><strong>{{ stat.value }}</strong><span>{{ stat.label }}</span></div>
+      {% endfor %}
+      <p>Stworzone, aby<br><strong>pamiętać.</strong></p>
+    </section>
+
+    <section class="levels section" id="poziomy">
+      <div class="section-heading">
+        <div><p class="eyebrow"><span></span> odkryj przestrzeń</p><h2>Trzy poziomy.<br><em>Jedna pamięć.</em></h2></div>
+        <p>Każda przestrzeń ma własny charakter. Wspólnie tworzą miejsce, w którym cisza spotyka się z naturą, a wspomnienia znajdują swój dom.</p>
+      </div>
+      <div class="level-grid">
+        {% for item in levels %}
+        <article class="level-card {{ item.accent }}">
+          <div class="card-top"><span>{{ item.level }}</span><span class="card-icon">{{ item.icon }}</span></div>
+          <div class="card-content"><h3>{{ item.name }}</h3><p>{{ item.description }}</p><span class="places">{{ item.spots }}</span><a href="#wyszukiwarka" aria-label="Zobacz {{ item.name }}">↗</a></div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="finder section" id="wyszukiwarka">
+      <div class="finder-copy"><p class="eyebrow light"><span></span> interaktywna mapa</p><h2>Znajdź miejsce<br><em>bliskie sercu.</em></h2><p>Wybierz poziom, sektor lub konkretną kwaterę. Zobacz dostępność i poznaj przestrzeń, która czeka na Twoją historię.</p><a class="button button-light" href="#mapa">Otwórz mapę <span>↗</span></a></div>
+      <div class="map-card" id="mapa"><div class="map-label">PODGLĄD MAPY <span>● online</span></div><div class="map-lines"></div><div class="map-pin pin-one">01</div><div class="map-pin pin-two">02</div><div class="map-pin pin-three">03</div><div class="map-legend"><span><i class="available"></i> dostępne</span><span><i class="reserved"></i> zarezerwowane</span></div></div>
+    </section>
+
+    <section class="values section" id="jak-dziala">
+      <div class="values-visual"><div class="quote-mark">“</div><p>To, co kochamy,<br><em>zostaje z nami.</em></p><small>— Horyzont, od 2024</small></div>
+      <div class="values-copy"><p class="eyebrow"><span></span> dlaczego horyzont</p><h2>Opieka, która<br><em>ma znaczenie.</em></h2><div class="value-row"><b>01</b><div><h3>Prosto i z szacunkiem</h3><p>Przejrzysty system rezerwacji pozwala skupić się na tym, co naprawdę ważne.</p></div></div><div class="value-row"><b>02</b><div><h3>Przestrzeń dla każdego</h3><p>Różne poziomy i pakiety dają rodzinom możliwość wyboru w zgodzie z ich potrzebami.</p></div></div><div class="value-row"><b>03</b><div><h3>Bliskość na co dzień</h3><p>Bezpieczny dostęp online pozwala dbać o miejsce pamięci z dowolnego miejsca.</p></div></div></div>
+    </section>
+  </main>
+
+  <footer id="kontakt"><div class="footer-brand"><span class="brand-mark">✦</span><h2>Horyzont</h2><p>miejsce pamięci</p></div><div><p class="footer-title">Nawigacja</p><a href="#poziomy">Poziomy</a><a href="#jak-dziala">Jak to działa</a><a href="#wyszukiwarka">Znajdź miejsce</a></div><div><p class="footer-title">Kontakt</p><p>hello@horyzont.pl</p><p>+48 555 010 204</p></div><div class="footer-bottom">© 2024 Horyzont <span>Projekt wielopoziomowego cmentarza</span></div></footer>
+  <script src="{% static 'js/site.js' %}"></script>
+</body>
+</html>
