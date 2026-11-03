@@ -27,9 +27,11 @@ Każdy właściciel odpowiada również za walidację, obsługę błędów, test
 
 ## Stan projektu i etapy
 
+**Aktualizacja 03.11.2026:** zaimplementowano `/mapa/` z widokiem 3D z boku, przełącznikiem 2D, obrotem i powiększeniem, filtry w URL, szczegóły miejsc, model `Place` i API JSON. [Kontrakt integracji i przygotowanie danych](docs/integracja-mapy.md). F02–F04 są zaimplementowane; końcowy odbiór UI i połączenie z formularzem rezerwacji pozostają do weryfikacji.
+
 **[Mapa stron i podział pracy](docs/mapa-stron.md)** — schemat nawigacji, status każdej strony i checklisty osobno dla Romana, Viktora oraz Volodymyra.
 
-Stan na 27.10.2026: działa strona główna, nawigacja kotwicowa i menu mobilne. Mapa jest makietą, a liczby miejsc są przykładowe. Brak modeli miejsc i rezerwacji, formularzy logowania, paneli ról oraz API. Konfiguracja auth i sessions jest przygotowana, ale nie oznacza gotowego logowania.
+Stan początkowy na 27.10.2026: działa strona główna, nawigacja kotwicowa i menu mobilne. Mapa jest makietą, a liczby miejsc są przykładowe. Brak modeli miejsc i rezerwacji, formularzy logowania, paneli ról oraz API. Konfiguracja auth i sessions jest przygotowana, ale nie oznacza gotowego logowania.
 
 - **M1 — Podstawy:** interfejs, konta i role, model miejsc, mapa, filtry i szczegóły.
 - **M2 — Obsługa rezerwacji:** pakiety, rezerwacje klienta, panel zarządcy i zarządzanie kontami.
@@ -44,9 +46,9 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 | ID | Funkcja i opis | Właściciel | Etap | Stan |
 |---|---|---|---|---|
 | F01 | [Strona główna i nawigacja](#f01) | @zefso | M1 | Podstawowa wersja działa |
-| F02 | [Interaktywna mapa](#f02) | @zefso | M1 | Makieta; logika do zrobienia |
-| F03 | [Filtrowanie miejsc](#f03) | @zefso | M1 | Do zrobienia |
-| F04 | [Szczegóły miejsca](#f04) | @zefso | M1 | Do zrobienia |
+| F02 | [Interaktywna mapa](#f02) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
+| F03 | [Filtrowanie miejsc](#f03) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
+| F04 | [Szczegóły miejsca](#f04) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
 | F05 | [Pakiety rezerwacji](#f05) | @he4tegg | M2 | Do zrobienia |
 | F06 | [Rezerwowanie miejsca](#f06) | @he4tegg | M2 | Do zrobienia |
 | F07 | [Moje rezerwacje](#f07) | @he4tegg | M2 | Do zrobienia |
@@ -222,9 +224,9 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 ## Architektura
 
-**Obecnie:** jedyna strona to `/`, renderowana przez Django. Stan menu znajduje się w DOM; dane poziomów i statystyk są stałe w widoku. SQLite jest skonfigurowane, ale brak modeli domenowych.
+**Obecnie:** strony `/` i `/mapa/` są renderowane przez Django. Mapa pobiera miejsca z SQLite przez `/api/miejsca/`; model `Place` przechowuje położenie, cechy i status. Filtry i wybór miejsca są w URL. Dane marketingowe głównej strony pozostają demonstracyjne.
 
-**Planowane widoki:** `/mapa/`, `/rezerwacje/nowa/`, `/moje-rezerwacje/`, `/logowanie/`, `/zarzadca/rezerwacje/`, `/administracja/uzytkownicy/`. Akcja `/wylogowanie/` przyjmuje POST. Żaden z tych adresów nie jest jeszcze zaimplementowany.
+**Planowane widoki:** `/rezerwacje/nowa/`, `/moje-rezerwacje/`, `/logowanie/`, `/zarzadca/rezerwacje/`, `/administracja/uzytkownicy/`. Akcja `/wylogowanie/` przyjmuje POST. Żaden z tych adresów nie jest jeszcze zaimplementowany.
 
 **Planowane dane i stan:** SQLite przechowuje miejsca, pakiety, rezerwacje i konta. Serwer jest źródłem prawdy dla dostępności i uprawnień. JS obsługuje mapę, formularz, ładowanie i błędy; `fetch` pobiera JSON oraz wysyła rezerwacje. Filtry są w URL, sesja w mechanizmie Django, a hasła i dane rezerwacji nie trafiają do localStorage. F02 i F06 wymagają wspólnego modelu miejsca; F06 oraz F10 używają tej samej logiki zapisu.
 
@@ -277,6 +279,7 @@ Następnie:
 ```bash
 python -m pip install -r requirements.txt
 python manage.py migrate
+python manage.py seed_places
 python manage.py check
 python manage.py runserver 8080
 ```

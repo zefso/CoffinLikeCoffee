@@ -1,6 +1,6 @@
 # Mapa stron i podział pracy
 
-Stan sprawdzony w kodzie: **27.10.2026**. Obecnie istnieje tylko adres `/`.
+Stan sprawdzony w kodzie: **03.11.2026**. Istnieją adresy `/` i `/mapa/` oraz API miejsc. [Integracja z rezerwacjami](integracja-mapy.md).
 Pozostałe adresy to plan, a nie działające linki. Podział odpowiada funkcjom F01–F11 w [README](../README.md#funkcjonalności).
 
 **Legenda:** GOTOWA BAZA = strona istnieje, wymaga końcowej weryfikacji; DO ZROBIENIA = brak strony. Kolory są dodatkowym oznaczeniem, status podano również tekstowo.
@@ -13,8 +13,8 @@ Schemat Mermaid można oglądać bezpośrednio na GitHubie. Strzałki pokazują 
 flowchart TD
     subgraph roman["Roman Horbach · @zefso"]
         home["P01 · Strona główna /<br/>GOTOWA BAZA"]
-        map["P02 · Mapa /mapa/<br/>DO ZROBIENIA"]
-        filters["Filtry + szczegóły miejsca<br/>Elementy mapy · DO ZROBIENIA"]
+        map["P02 · Mapa /mapa/<br/>IMPLEMENTACJA GOTOWA · ODBIÓR UI"]
+        filters["Filtry + szczegóły miejsca<br/>Elementy mapy · ODBIÓR UI"]
     end
     subgraph viktor["Viktor Levchenko · @he4tegg"]
         booking["P03 · Nowa rezerwacja<br/>/rezerwacje/nowa/<br/>DO ZROBIENIA"]
@@ -51,7 +51,7 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 | Gotowe | ID | Strona i adres | Właściciel | Zakres | Obecny stan |
 |---|---|---|---|---|---|
 | ☐ | P01 | Główna `/` | Roman | F01: sekcje, nawigacja, menu mobilne | Baza działa; końcowa kontrola dostępności i responsywności |
-| ☐ | P02 | Mapa `/mapa/` | Roman | F02–F04: mapa, filtry, szczegóły | Brak strony; na głównej jest dekoracyjna makieta |
+| ☐ | P02 | Mapa `/mapa/` | Roman | F02–F04: mapa, filtry, szczegóły | Zaimplementowano; końcowy odbiór UI i integracja rezerwacji do weryfikacji |
 | ☐ | P03 | Nowa rezerwacja `/rezerwacje/nowa/` | Viktor | F05–F06: pakiet, formularz, wynik zapisu | Do zrobienia |
 | ☐ | P04 | Moje rezerwacje `/moje-rezerwacje/` | Viktor | F07: lista i szczegóły własnych rezerwacji | Do zrobienia |
 | ☐ | P05 | Logowanie `/logowanie/` | Volodymyr | F08: formularz, błędy, przekierowanie | Brak strony; konfiguracja auth i sessions przygotowana |
@@ -63,11 +63,12 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 
 - [x] P01: przygotować podstawową stronę główną i menu mobilne.
 - [ ] P01: sprawdzić mały ekran, klawiaturę i odnośniki do nowych stron.
-- [ ] P02: dodać stronę mapy i pobieranie miejsc przez `fetch`.
-- [ ] P02: wybór poziomu, sektora i rzędu; legenda statusów.
-- [ ] P02: połączyć filtry i zapisywać je w URL.
-- [ ] P02: panel szczegółów i przejście do rezerwacji z identyfikatorem miejsca.
-- [ ] P02: obsłużyć ładowanie, błąd sieci i brak wyników.
+- [x] P02: dodać stronę mapy i pobieranie miejsc przez `fetch`.
+- [x] P02: wybór poziomu, sektora i rzędu; legenda statusów.
+- [x] P02: połączyć filtry i zapisywać je w URL.
+- [x] P02: panel szczegółów i kontrakt przekazania identyfikatora miejsca.
+- [ ] P02: sprawdzić pełne przejście po podłączeniu formularza Viktora i odebrać UI w przeglądarce.
+- [x] P02: obsłużyć ładowanie, błąd sieci i brak wyników.
 
 ## Viktor — ścieżka rezerwacji klienta
 

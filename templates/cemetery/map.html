@@ -1,0 +1,156 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mapa miejsc | Horyzont</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <link rel="stylesheet" href="{% static 'css/map.css' %}">
+    <script defer src="{% static 'js/map-3d.js' %}"></script>
+    <script defer src="{% static 'js/map.js' %}"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#map-main">Przejdź do mapy</a>
+    <header class="site-header"><a class="brand" href="{% url 'home' %}"><span class="brand-mark">✦</span><span><strong>Horyzont</strong><small>miejsce pamięci</small></span></a><a href="{% url 'home' %}">← Strona główna</a></header>
+    <main id="map-main"
+          class="map-page"
+          data-api="{% url 'places' %}"
+          data-booking="{{ booking_url }}">
+      <div class="map-heading">
+        <p class="eyebrow">PRZESTRZEŃ PAMIĘCI</p>
+        <h1>Znajdź swoje <em>miejsce.</em></h1>
+        <p>Wybierz przestrzeń, sprawdź dostępność i poznaj szczegóły miejsca.</p>
+        <p class="demo-note">Wersja demonstracyjna · przykładowy układ cmentarza</p>
+      </div>
+      <form id="filters" class="filters" aria-label="Filtry miejsc">
+        <label>
+          Poziom<select name="level">
+          <option value="">Wszystkie poziomy</option>
+          <option value="1">01 · Ogród Pamięci</option>
+          <option value="2">02 · Taras Ciszy</option>
+          <option value="3">03 · Galeria Wspomnień</option>
+          </select>
+        </label>
+        <label>
+          Sektor<select name="sector">
+          <option value="">Wszystkie</option>
+          <option>A</option>
+          <option>B</option>
+          <option>C</option>
+          <option>D</option>
+          </select>
+        </label>
+        <label>
+          Rząd<select name="row">
+          <option value="">Wszystkie</option>
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+          </select>
+        </label>
+        <label>
+          Typ<select name="kind">
+          <option value="">Wszystkie</option>
+          <option value="adult">Dla dorosłych</option>
+          <option value="child">Dla dzieci</option>
+          </select>
+        </label>
+        <label>
+          Pojemność<select name="capacity">
+          <option value="">Wszystkie</option>
+          <option value="single">Jednoosobowe</option>
+          <option value="double">Dwuosobowe</option>
+          <option value="family">Rodzinne</option>
+          </select>
+        </label>
+        <label>
+          Grunt<select name="ground">
+          <option value="">Wszystkie</option>
+          <option value="standard">Standardowy</option>
+          <option value="reinforced">Wzmocniony</option>
+          </select>
+        </label>
+        <label>
+          Dostępność<select name="status">
+          <option value="">Wszystkie</option>
+          <option value="available">Wolne</option>
+          <option value="reserved">Zarezerwowane</option>
+          <option value="occupied">Zajęte</option>
+          </select>
+        </label>
+        <button type="reset" class="quiet-button">Wyczyść filtry</button>
+      </form>
+      <div class="map-layout">
+        <section class="map-surface" aria-label="Miejsca pochówku">
+          <div class="map-toolbar">
+            <p id="result-status" role="status" aria-live="polite">Ładowanie miejsc…</p>
+            <button id="refresh" class="quiet-button" type="button">Odśwież</button>
+          </div>
+          <ul class="legend">
+            <li><span class="swatch available"></span>W · Wolne</li>
+            <li><span class="swatch reserved"></span>R · Zarezerwowane</li>
+            <li><span class="swatch occupied"></span>Z · Zajęte</li>
+          </ul>
+          <p id="map-error"
+             role="alert"
+             hidden>Nie udało się pobrać miejsc. Sprawdź połączenie i spróbuj ponownie.</p>
+          <button id="retry" class="quiet-button" type="button" hidden>Spróbuj ponownie</button>
+          <div class="scene-toolbar" aria-label="Widok mapy">
+            <button id="view-3d"
+                    type="button"
+                    class="quiet-button"
+                    aria-pressed="true">Widok 3D</button>
+            <button id="view-2d"
+                    type="button"
+                    class="quiet-button"
+                    aria-pressed="false">Mapa 2D</button>
+          </div>
+          <section id="scene-panel" aria-label="Trójwymiarowa mapa">
+            <div class="scene-toolbar">
+              <label>
+                Oglądany sektor
+                <select id="scene-sector" aria-label="Oglądany sektor"></select>
+              </label>
+              <button id="rotate-left"
+                      type="button"
+                      class="quiet-button"
+                      aria-label="Obróć w lewo">↶</button>
+              <button id="rotate-right"
+                      type="button"
+                      class="quiet-button"
+                      aria-label="Obróć w prawo">↷</button>
+              <button id="zoom-in"
+                      type="button"
+                      class="quiet-button"
+                      aria-label="Przybliż">+</button>
+              <button id="zoom-out" type="button" class="quiet-button" aria-label="Oddal">−</button>
+              <button id="reset-camera" type="button" class="quiet-button">Reset widoku</button>
+            </div>
+            <p class="scene-help" id="scene-help">Przeciągnij, aby obrócić · przyciski +/− przybliżają · kliknij nagrobek. Klawiatura: strzałki obracają, Tab wybiera miejsca poniżej.</p>
+            <canvas id="cemetery-scene"
+                    tabindex="0"
+                    aria-label="Mapa 3D sektora"
+                    aria-describedby="scene-help"></canvas>
+            <p id="scene-empty" hidden>Brak miejsc w wybranych filtrach.</p>
+            <div id="scene-choices"
+                 class="scene-choices"
+                 aria-label="Wybór miejsca w sektorze"></div>
+          </section>
+          <div id="places" hidden aria-busy="true"></div>
+          <noscript>Włącz JavaScript, aby korzystać z interaktywnej mapy.</noscript>
+        </section>
+        <aside id="details"
+               class="place-details"
+               aria-label="Szczegóły miejsca"
+               aria-live="polite">
+          <p class="eyebrow">TWÓJ WYBÓR</p>
+          <h2>Szczegóły miejsca</h2>
+          <p>Wybierz oznaczone miejsce na mapie. Tutaj zobaczysz jego położenie, cechy i dostępność.</p>
+        </aside>
+      </div>
+    </main>
+    <footer class="map-footer">Horyzont · Projekt studencki <a href="{% url 'home' %}">Powrót na stronę główną ↑</a></footer>
+  </body>
+</html>
