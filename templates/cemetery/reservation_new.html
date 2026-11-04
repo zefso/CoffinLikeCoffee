@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nowa rezerwacja | Horyzont</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <link rel="stylesheet" href="{% static 'css/map.css' %}">
+    <link rel="stylesheet" href="{% static 'css/reservation.css' %}">
+    <script defer src="{% static 'js/reservation.js' %}"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#reservation">Przejdź do rezerwacji</a>
+    <header class="site-header"><a class="brand" href="{% url 'home' %}"><span class="brand-mark">✦</span><span><strong>Horyzont</strong><small>miejsce pamięci</small></span></a><a href="{% url 'map' %}">← Mapa miejsc</a></header>
+    <main id="reservation"
+          class="map-page reservation-page"
+          data-api="{% url 'places' %}"
+          data-post="{% url 'reservations' %}"
+          data-login="{{ login_url }}">
+      <div class="map-heading">
+        <p class="eyebrow">NOWA REZERWACJA</p>
+        <h1>Wybierz <em>spokojnie.</em></h1>
+        <p class="demo-note">Wersja demonstracyjna · kwoty przykładowe · bez płatności · prawo do miejsca na 20 lat</p>
+      </div>
+      <p id="reservation-message" class="reservation-message" role="alert" hidden></p>
+      <button id="reservation-retry" class="quiet-button" type="button" hidden>Spróbuj ponownie</button>
+      <noscript>Włącz JavaScript, aby dokonać rezerwacji.</noscript>
+      <div class="reservation-layout">
+        <form id="reservation-form" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="place">
+          <section data-step="1">
+            <h2 tabindex="-1">Krok 1 z 5 · Dla kogo jest miejsce?</h2>
+            <fieldset class="choices">
+              <legend>Typ miejsca</legend>
+              {% for value, label in kinds %}
+                <label class="choice"><input type="radio" name="kind" value="{{ value }}"><span><strong>{{ label }}</strong></span></label>
+              {% endfor %}
+            </fieldset>
+            <fieldset class="choices">
+              <legend>Pojemność</legend>
+              {% for capacity in capacities %}
+                <label class="choice"><input type="radio" name="capacity" value="{{ capacity.id }}"><span><strong>{{ capacity.name }}</strong><small>+{{ capacity.fee }}</small></span></label>
+              {% endfor %}
+            </fieldset>
+          </section>
+          <section data-step="2" hidden>
+            <h2 tabindex="-1">Krok 2 z 5 · Wybierz poziom</h2>
+            <fieldset class="choices cards">
+              <legend>Poziom cmentarza</legend>
+              {% for level in levels %}
+                <label class="choice">
+                  <input type="radio" name="level" value="{{ level.id }}">
+                  <span>
+                    <strong>{{ level.name }}</strong>
+                    <b>od {{ level.price }}</b>
+                    <small data-count="{{ level.id }}"></small>
+                    <ul>
+                      {% for benefit in level.benefits %}<li>{{ benefit }}</li>{% endfor %}
+                    </ul>
+                  </span>
+                </label>
+              {% endfor %}
+            </fieldset>
+          </section>
+          <section data-step="3" hidden>
+            <h2 tabindex="-1">Krok 3 z 5 · Jak chcesz wybrać miejsce?</h2>
+            <fieldset class="choices cards">
+              <legend>Pakiet</legend>
+              {% for package in packages %}
+                <label class="choice">
+                  <input type="radio" name="package" value="{{ package.id }}">
+                  <span>
+                    <strong>{{ package.name }}{% if package.id == "row" %} · Polecany{% endif %}</strong>
+                    <b data-fee="{{ package.id }}">+{{ package.fee }}</b>
+                    <small>{{ package.description }}</small>
+                  </span>
+                </label>
+              {% endfor %}
+            </fieldset>
+            <div class="package-options">
+              <label id="sector-field" hidden>Sektor<select name="sector"></select></label>
+              <label id="row-field" hidden>Rząd<select name="row"></select></label>
+              <label id="reinforced-field" class="check" hidden><input type="checkbox" name="reinforced"> Grunt wzmocniony (+{{ reinforced_fee }})</label>
+            </div>
+            <div id="seat-panel" hidden>
+              <p id="seat-caption" role="status"></p>
+              <div id="seats" role="group" aria-label="Plan miejsc"></div>
+              <p id="seat-legend-exact" class="seat-legend">W · wolne, R · zarezerwowane, Z · zajęte, + · grunt wzmocniony (+{{ reinforced_fee }}). Wyszarzone miejsca nie pasują do Twojego wyboru.</p>
+              <p id="seat-legend-pool" class="seat-legend" hidden>Obramowane miejsca to pula przydziału. W · wolne, R · zarezerwowane, Z · zajęte, + · grunt wzmocniony.</p>
+            </div>
+          </section>
+          <section data-step="4" hidden>
+            <h2 tabindex="-1">Krok 4 z 5 · Twoje dane</h2>
+            {% if user.is_authenticated %}
+              <fieldset class="fields">
+                <legend>Osoba rezerwująca</legend>
+                {% include "cemetery/_field.html" with name="first_name" label="Imię" value=user.first_name autocomplete="given-name" %}
+                {% include "cemetery/_field.html" with name="last_name" label="Nazwisko" value=user.last_name autocomplete="family-name" %}
+                {% include "cemetery/_field.html" with name="email" label="Email" type="email" value=user.email autocomplete="email" %}
+                {% include "cemetery/_field.html" with name="phone" label="Telefon" type="tel" autocomplete="tel" %}
+                {% include "cemetery/_field.html" with name="pesel" label="PESEL" autocomplete="off" pesel=True %}
+              </fieldset>
+              <label class="check"><input type="checkbox" name="for_self"> Rezerwuję dla siebie</label>
+              <span class="field-error" id="error-for_self"></span>
+              <fieldset id="beneficiary" class="fields">
+                <legend>Osoba, dla której jest rezerwacja</legend>
+                {% include "cemetery/_field.html" with name="beneficiary_first_name" label="Imię" autocomplete="off" %}
+                {% include "cemetery/_field.html" with name="beneficiary_last_name" label="Nazwisko" autocomplete="off" %}
+                {% include "cemetery/_field.html" with name="beneficiary_pesel" label="PESEL" autocomplete="off" pesel=True %}
+              </fieldset>
+              <p class="seat-legend">PESEL sprawdzamy tylko przy zapisie i nie przechowujemy go.</p>
+            {% else %}
+              <p>Twój wybór zostanie zachowany. Aby podać dane i zarezerwować, zaloguj się.</p>
+              <a id="login-link" class="booking-link" href="{{ login_url }}">Zaloguj się, aby kontynuować →</a>
+            {% endif %}
+          </section>
+          <section data-step="5" hidden>
+            <h2 tabindex="-1">Krok 5 z 5 · Sprawdź i potwierdź</h2>
+            <p>Sprawdź wybór w podsumowaniu. Po potwierdzeniu miejsce zostanie zarezerwowane na Twoje konto.</p>
+            <dl id="review"></dl>
+          </section>
+          <div class="step-buttons">
+            <button id="step-back" class="quiet-button" type="button">← Wstecz</button>
+            <button id="step-next" class="button button-dark" type="button">Dalej →</button>
+            <button id="step-submit" class="button button-dark" type="button" hidden>Potwierdź rezerwację</button>
+          </div>
+        </form>
+        <aside class="place-details" aria-label="Podsumowanie wyboru" aria-live="polite">
+          <p class="eyebrow">TWÓJ WYBÓR</p>
+          <h2>Podsumowanie</h2>
+          <dl id="summary"></dl>
+          <p class="total">Razem <strong id="total">—</strong></p>
+        </aside>
+      </div>
+      {{ pricing|json_script:"pricing" }}
+    </main>
+    <footer class="map-footer">Horyzont · Projekt studencki <a href="{% url 'my_reservations' %}">Moje rezerwacje</a></footer>
+  </body>
+</html>

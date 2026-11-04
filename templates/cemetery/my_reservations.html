@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Moje rezerwacje | Horyzont</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <link rel="stylesheet" href="{% static 'css/map.css' %}">
+    <link rel="stylesheet" href="{% static 'css/reservation.css' %}">
+  </head>
+  <body>
+    <a class="skip-link" href="#reservations">Przejdź do rezerwacji</a>
+    <header class="site-header"><a class="brand" href="{% url 'home' %}"><span class="brand-mark">✦</span><span><strong>Horyzont</strong><small>miejsce pamięci</small></span></a><a href="{% url 'map' %}">← Mapa miejsc</a></header>
+    <main id="reservations" class="map-page reservation-page">
+      <div class="map-heading">
+        <p class="eyebrow">TWOJE KONTO</p>
+        <h1>Moje <em>rezerwacje.</em></h1>
+      </div>
+      {% for reservation in reservations %}
+        <article class="place-details reservation-card{% if reservation.pk|stringformat:'d' == new_id %} is-new{% endif %}">
+          {% if reservation.pk|stringformat:'d' == new_id %}<p role="status"><strong>Rezerwacja została zapisana.</strong> Nie pobieramy płatności.</p>{% endif %}
+          <h2>{{ reservation.place.code }}</h2>
+          <dl>
+            <dt>Status</dt><dd>{{ reservation.get_status_display }}</dd>
+            <dt>Pakiet</dt><dd>{{ reservation.get_package_display }}</dd>
+            <dt>Poziom</dt><dd>{{ reservation.level_name }}</dd>
+            <dt>Sektor</dt><dd>{{ reservation.place.sector }}</dd>
+            <dt>Rząd i miejsce</dt><dd>{{ reservation.place.row }} / {{ reservation.place.number }}</dd>
+            <dt>Grunt</dt><dd>{{ reservation.place.get_ground_display }}</dd>
+            <dt>Dla kogo</dt><dd>{{ reservation.beneficiary_first_name }} {{ reservation.beneficiary_last_name }}</dd>
+            <dt>Cena</dt><dd>{{ reservation.price_label }}</dd>
+            <dt>Data</dt><dd>{{ reservation.created_at|date:"d.m.Y H:i" }}</dd>
+          </dl>
+          <ul>
+            {% for benefit in reservation.benefits %}<li>{{ benefit }}</li>{% endfor %}
+          </ul>
+        </article>
+      {% empty %}
+        <p>Nie masz jeszcze żadnych rezerwacji.</p>
+        <a class="booking-link" href="{% url 'map' %}">Znajdź miejsce na mapie →</a>
+      {% endfor %}
+    </main>
+    <footer class="map-footer">Horyzont · Projekt studencki <a href="{% url 'reservation_create' %}">Nowa rezerwacja</a></footer>
+  </body>
+</html>

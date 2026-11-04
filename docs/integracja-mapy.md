@@ -52,6 +52,18 @@ Model ma stabilny `id` i unikalne położenie `(level, sector, row, number)`. Po
 
 Dopóki trasa `reservation_create` nie istnieje, mapa wyświetla komunikat o przygotowywaniu modułu zamiast niedziałającego linku. Nie dodano zastępczego formularza ani logiki płatności.
 
+## Rezerwacje: stan po integracji (04.11.2026)
+
+Trasa `reservation_create` istnieje, więc mapa pokazuje link do `/rezerwacje/nowa/?miejsce=<id>`. Proces zawsze startuje od kroku 1. Miejsce z mapy tylko podpowiada typ, pojemność i poziom, a na planie jest zaznaczone dopiero po wyborze pakietu „Wybrane miejsce”.
+
+Przy pakietach z przydziałem automatycznym ten sam plan jest podglądem puli: pokazuje poziom, sektor lub rząd i obramowuje miejsca, z których serwer może losować. Nie jest klikalny.
+
+Kroki 1–3 są publiczne, a wybór jest w URL, więc przetrwa logowanie. Krok 4 linkuje do `LOGIN_URL` z parametrem `next`. **Volodymyr:** widok `/logowanie/` musi obsłużyć `next` i sprawdzić jego bezpieczeństwo.
+
+**Panel F10** ma używać `create_reservation` i `cancel_reservation` z `cemetery/reservations.py`, a nie zmieniać `Place.status` bezpośrednio. Seedowane miejsca `reserved` nie mają rekordu `Reservation`.
+
+Cennik demonstracyjny jest w `cemetery/reservations.py`. Punkt odniesienia: na warszawskim Cmentarzu Północnym grób tradycyjny na 20 lat to około 2 400 zł, murowany około 4 400 zł, a nisza w kolumbarium 4 150–4 790 zł.
+
 ## Stan frontendu i weryfikacja
 
 `/mapa/` zapisuje filtry oraz zaznaczone miejsce (`miejsce`) w URL. Przeglądarka obsługuje Wstecz/Dalej. Dostępność oznaczono kolorem i tekstem (W/R/Z); wszystkie miejsca są przyciskami dostępnymi z klawiatury, również zajęte pozwalają obejrzeć szczegóły.

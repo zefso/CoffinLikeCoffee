@@ -21,13 +21,15 @@ Każdy właściciel odpowiada również za walidację, obsługę błędów, test
 - Backend i szablony: Python, Django 5.x (`Django>=5.0,<6.0`).
 - Frontend: HTML5, CSS3 i JavaScript bez frameworka.
 - Budowanie i uruchamianie: brak bundlera JS; Django oraz Docker Compose (Python 3.12 w obrazie).
-- Dane: SQLite; obecnie treści strony pochodzą ze słowników w widoku.
-- Planowane API: własne widoki Django zwracające JSON, pobierane przez `fetch`; brak zewnętrznego API biznesowego.
+- Dane: SQLite (miejsca, rezerwacje, konta); treści marketingowe strony głównej pochodzą ze słowników w widoku, a pakiety i cennik ze stałych w `cemetery/reservations.py`.
+- API: własne widoki Django zwracające JSON, pobierane przez `fetch` (`/api/miejsca/`, `/api/rezerwacje/`); brak zewnętrznego API biznesowego.
 - Fonty: Google Fonts (DM Sans, Playfair Display), z fontami zastępczymi w CSS.
 
 ## Stan projektu i etapy
 
 **Aktualizacja 03.11.2026:** zaimplementowano `/mapa/` z widokiem 3D z boku, przełącznikiem 2D, obrotem i powiększeniem, filtry w URL, szczegóły miejsc, model `Place` i API JSON. [Kontrakt integracji i przygotowanie danych](docs/integracja-mapy.md). F02–F04 są zaimplementowane; końcowy odbiór UI i połączenie z formularzem rezerwacji pozostają do weryfikacji.
+
+**Aktualizacja 04.11.2026:** zaimplementowano F05–F07: pięciokrokową rezerwację na `/rezerwacje/nowa/` (typ i pojemność, poziom, pakiet z planem miejsc, dane, potwierdzenie), cennik liczony na serwerze, zapis chroniony przed podwójną rezerwacją, walidację PESEL bez jego przechowywania oraz `/moje-rezerwacje/`. Link z mapy prowadzi do kroku 1. Pełna ścieżka klienta czeka na logowanie F08.
 
 **[Mapa stron i podział pracy](docs/mapa-stron.md)** — schemat nawigacji, status każdej strony i checklisty osobno dla Romana, Viktora oraz Volodymyra.
 
@@ -49,9 +51,9 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 | F02 | [Interaktywna mapa](#f02) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
 | F03 | [Filtrowanie miejsc](#f03) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
 | F04 | [Szczegóły miejsca](#f04) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
-| F05 | [Pakiety rezerwacji](#f05) | @he4tegg | M2 | Do zrobienia |
-| F06 | [Rezerwowanie miejsca](#f06) | @he4tegg | M2 | Do zrobienia |
-| F07 | [Moje rezerwacje](#f07) | @he4tegg | M2 | Do zrobienia |
+| F05 | [Pakiety rezerwacji](#f05) | @he4tegg | M2 | Zaimplementowane; pełna ścieżka czeka na logowanie F08 |
+| F06 | [Rezerwowanie miejsca](#f06) | @he4tegg | M2 | Zaimplementowane; pełna ścieżka czeka na logowanie F08 |
+| F07 | [Moje rezerwacje](#f07) | @he4tegg | M2 | Zaimplementowane; pełna ścieżka czeka na logowanie F08 |
 | F08 | [Logowanie i wylogowanie](#f08) | @Petruk-Volodymyr | M1 | Konfiguracja przygotowana; widoki do zrobienia |
 | F09 | [Role i uprawnienia](#f09) | @Petruk-Volodymyr | M1 | Do zrobienia |
 | F10 | [Panel zarządcy](#f10) | @Petruk-Volodymyr | M2 | Do zrobienia |
@@ -122,11 +124,11 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Właściciel:** Viktor Levchenko (@he4tegg).
 
-**Co robi użytkownik:** wybiera pakiet: podstawowy (przydział automatyczny), sektor (wybór sektora), rząd (wybór sektora i rzędu) albo miejsce (wybór konkretnego miejsca).
+**Co robi użytkownik:** wybiera typ i pojemność miejsca, poziom, a następnie pakiet: podstawowy (przydział automatyczny, tylko grunt standardowy), sektor, rząd albo konkretne miejsce. Grunt wzmocniony wymaga dopłaty, a dorosły nie może otrzymać miejsca dziecięcego. Przy każdym pakiecie plan miejsc pokazuje pulę, z której serwer przydzieli miejsce; klikalny jest tylko w pakiecie „Wybrane miejsce”.
 
-**Widok:** planowane `/rezerwacje/nowa/`.
+**Widok:** `/rezerwacje/nowa/`, kroki 1–3 bez logowania.
 
-**Dane:** własna konfiguracja pakietów i dostępne miejsca.
+**Dane:** stałe `LEVEL_OFFERS`, `PACKAGES`, `CAPACITY_FEES` i `REINFORCED_FEE` w `cemetery/reservations.py`; dostępne miejsca z `GET /api/miejsca/`. Cena jest liczona na serwerze.
 
 **Najtrudniejsze:** dynamiczne pola formularza w JS oraz sprawdzenie tych samych ograniczeń na serwerze.
 
@@ -137,11 +139,11 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Właściciel:** Viktor Levchenko (@he4tegg).
 
-**Co robi użytkownik:** zalogowany klient wybiera pakiet, wypełnia formularz, zatwierdza rezerwację i otrzymuje potwierdzenie.
+**Co robi użytkownik:** zalogowany klient podaje swoje dane oraz dane osoby, dla której jest rezerwacja (albo zaznacza „Rezerwuję dla siebie”), zatwierdza rezerwację i otrzymuje potwierdzenie.
 
-**Widok:** planowane `/rezerwacje/nowa/`.
+**Widok:** `/rezerwacje/nowa/`, kroki 4–5.
 
-**Dane:** SQLite: rezerwacja powiązana z klientem, miejscem, pakietem, datą i statusem; planowane `POST /api/rezerwacje/`.
+**Dane:** SQLite: rezerwacja powiązana z klientem, miejscem, pakietem, ceną, datą i statusem; `POST /api/rezerwacje/`. PESEL jest sprawdzany przy zapisie (format, suma kontrolna, data, wiek) i nie jest przechowywany. Nie potwierdza to tożsamości.
 
 **Najtrudniejsze:** niedopuszczenie do podwójnej rezerwacji i obsługa błędów `fetch` bez utraty formularza.
 
@@ -154,7 +156,7 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Co robi użytkownik:** przegląda własne rezerwacje, ich status, pakiet i lokalizację miejsca.
 
-**Widok:** planowane `/moje-rezerwacje/`.
+**Widok:** `/moje-rezerwacje/`.
 
 **Dane:** rezerwacje filtrowane na serwerze według zalogowanego klienta.
 
@@ -226,16 +228,22 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Obecnie:** strony `/` i `/mapa/` są renderowane przez Django. Mapa pobiera miejsca z SQLite przez `/api/miejsca/`; model `Place` przechowuje położenie, cechy i status. Filtry i wybór miejsca są w URL. Dane marketingowe głównej strony pozostają demonstracyjne.
 
-**Planowane widoki:** `/rezerwacje/nowa/`, `/moje-rezerwacje/`, `/logowanie/`, `/zarzadca/rezerwacje/`, `/administracja/uzytkownicy/`. Akcja `/wylogowanie/` przyjmuje POST. Żaden z tych adresów nie jest jeszcze zaimplementowany.
+**Rezerwacje:** `/rezerwacje/nowa/`, `/moje-rezerwacje/` i `POST /api/rezerwacje/` działają. Kroki 1–3 są publiczne, a wybór klienta jest w URL, więc przetrwa logowanie; dane osobowe nie trafiają do URL. Walidacja jest w `cemetery/forms.py`, logika zapisu i cennik w `cemetery/reservations.py`, a przed podwójną rezerwacją chronią warunkowy `UPDATE` i częściowy unikalny indeks. `Reservation` przechowuje cenę z chwili rezerwacji; PESEL nie jest zapisywany.
 
-**Planowane dane i stan:** SQLite przechowuje miejsca, pakiety, rezerwacje i konta. Serwer jest źródłem prawdy dla dostępności i uprawnień. JS obsługuje mapę, formularz, ładowanie i błędy; `fetch` pobiera JSON oraz wysyła rezerwacje. Filtry są w URL, sesja w mechanizmie Django, a hasła i dane rezerwacji nie trafiają do localStorage. F02 i F06 wymagają wspólnego modelu miejsca; F06 oraz F10 używają tej samej logiki zapisu.
+**Planowane widoki:** `/logowanie/`, `/zarzadca/rezerwacje/`, `/administracja/uzytkownicy/`. Akcja `/wylogowanie/` przyjmuje POST. Żaden z tych adresów nie jest jeszcze zaimplementowany.
+
+**Planowane dane i stan:** SQLite przechowuje miejsca, rezerwacje i konta; pakiety i cennik są stałymi w kodzie. Serwer jest źródłem prawdy dla dostępności i uprawnień. JS obsługuje mapę, formularz, ładowanie i błędy; `fetch` pobiera JSON oraz wysyła rezerwacje. Filtry są w URL, sesja w mechanizmie Django, a hasła i dane rezerwacji nie trafiają do localStorage. F02 i F06 wymagają wspólnego modelu miejsca; F06 oraz F10 używają tej samej logiki zapisu.
 
 ```text
-cemetery/                  widok strony i routing; docelowo modele, API i formularze
+cemetery/                  modele, widoki, routing i testy
+cemetery/map_views.py      mapa i API miejsc
+cemetery/reservations.py   cennik, pakiety, zapis i anulowanie rezerwacji (wspólne z F10)
+cemetery/forms.py          walidacja rezerwacji i PESEL
+cemetery/reservation_views.py  formularz, API rezerwacji i lista klienta
 cemetery_site/             ustawienia Django, główny routing i WSGI
 templates/cemetery/       szablony HTML
-static/css/site.css       style strony
-static/js/site.js         obecnie menu; docelowo osobne moduły mapy i rezerwacji
+static/css/               style: site.css, map.css, reservation.css
+static/js/                site.js (menu), map.js, map-3d.js, mini-map.js, reservation.js
 manage.py                 polecenia Django
 requirements.txt          zależności Python
 Dockerfile                obraz aplikacji
@@ -285,6 +293,8 @@ python manage.py runserver 8080
 ```
 
 Otwórz http://127.0.0.1:8080/.
+
+Po pobraniu zmian uruchom `python manage.py migrate`, aby utworzyć tabelę rezerwacji. Testy: `python manage.py test`. Dopóki nie ma `/logowanie/` (F08), konfigurator działa do kroku 4, a zapis rezerwacji w przeglądarce wymaga sesji zalogowanego użytkownika.
 
 ### Zmienne środowiskowe
 

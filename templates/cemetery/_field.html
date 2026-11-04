@@ -1,0 +1,11 @@
+<label class="field">
+  {{ label }}
+  <input name="{{ name }}"
+         type="{{ type|default:'text' }}"
+         {% if value %}value="{{ value }}"{% endif %}
+         {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+         {% if pesel %}inputmode="numeric" pattern="[0-9]{11}" maxlength="11"{% endif %}
+         aria-describedby="error-{{ name }}"
+         required>
+  <span class="field-error" id="error-{{ name }}"></span>
+</label>

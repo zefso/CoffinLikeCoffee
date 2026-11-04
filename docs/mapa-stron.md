@@ -1,6 +1,6 @@
 # Mapa stron i podział pracy
 
-Stan sprawdzony w kodzie: **03.11.2026**. Istnieją adresy `/` i `/mapa/` oraz API miejsc. [Integracja z rezerwacjami](integracja-mapy.md).
+Stan sprawdzony w kodzie: **04.11.2026**. Istnieją adresy `/`, `/mapa/`, `/rezerwacje/nowa/`, `/moje-rezerwacje/` oraz API miejsc i rezerwacji. [Integracja z rezerwacjami](integracja-mapy.md).
 Pozostałe adresy to plan, a nie działające linki. Podział odpowiada funkcjom F01–F11 w [README](../README.md#funkcjonalności).
 
 **Legenda:** GOTOWA BAZA = strona istnieje, wymaga końcowej weryfikacji; DO ZROBIENIA = brak strony. Kolory są dodatkowym oznaczeniem, status podano również tekstowo.
@@ -17,8 +17,8 @@ flowchart TD
         filters["Filtry + szczegóły miejsca<br/>Elementy mapy · ODBIÓR UI"]
     end
     subgraph viktor["Viktor Levchenko · @he4tegg"]
-        booking["P03 · Nowa rezerwacja<br/>/rezerwacje/nowa/<br/>DO ZROBIENIA"]
-        mine["P04 · Moje rezerwacje<br/>/moje-rezerwacje/<br/>DO ZROBIENIA"]
+        booking["P03 · Nowa rezerwacja<br/>/rezerwacje/nowa/<br/>IMPLEMENTACJA GOTOWA · CZEKA NA F08"]
+        mine["P04 · Moje rezerwacje<br/>/moje-rezerwacje/<br/>IMPLEMENTACJA GOTOWA · CZEKA NA F08"]
     end
     subgraph volodymyr["Volodymyr Petruk · @Petruk-Volodymyr"]
         login["P05 · Logowanie /logowanie/<br/>DO ZROBIENIA"]
@@ -52,8 +52,8 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 |---|---|---|---|---|---|
 | ☐ | P01 | Główna `/` | Roman | F01: sekcje, nawigacja, menu mobilne | Baza działa; końcowa kontrola dostępności i responsywności |
 | ☐ | P02 | Mapa `/mapa/` | Roman | F02–F04: mapa, filtry, szczegóły | Zaimplementowano; końcowy odbiór UI i integracja rezerwacji do weryfikacji |
-| ☐ | P03 | Nowa rezerwacja `/rezerwacje/nowa/` | Viktor | F05–F06: pakiet, formularz, wynik zapisu | Do zrobienia |
-| ☐ | P04 | Moje rezerwacje `/moje-rezerwacje/` | Viktor | F07: lista i szczegóły własnych rezerwacji | Do zrobienia |
+| ☐ | P03 | Nowa rezerwacja `/rezerwacje/nowa/` | Viktor | F05–F06: pakiet, formularz, wynik zapisu | Zaimplementowano; pełna ścieżka czeka na logowanie F08 |
+| ☐ | P04 | Moje rezerwacje `/moje-rezerwacje/` | Viktor | F07: lista i szczegóły własnych rezerwacji | Zaimplementowano; pełna ścieżka czeka na logowanie F08 |
 | ☐ | P05 | Logowanie `/logowanie/` | Volodymyr | F08: formularz, błędy, przekierowanie | Brak strony; konfiguracja auth i sessions przygotowana |
 | ☐ | P06 | Panel zarządcy `/zarzadca/rezerwacje/` | Volodymyr | F10: lista, usuwanie, statusy, dostępność | Do zrobienia |
 | ☐ | P07 | Formularz `/zarzadca/rezerwacje/nowa/` i `/zarzadca/rezerwacje/<id>/edycja/` | Volodymyr | F10: dodawanie i edycja | Do zrobienia; proponowane adresy |
@@ -72,12 +72,12 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 
 ## Viktor — ścieżka rezerwacji klienta
 
-- [ ] P03: wybór pakietu i odpowiednie pola formularza.
-- [ ] P03: przejąć miejsce wybrane na mapie i sprawdzić zgodność z pakietem.
-- [ ] P03: walidacja, zapis przez `fetch` i komunikat potwierdzenia.
-- [ ] P03: automatyczny przydział oraz obsługa braku miejsc i konfliktu rezerwacji.
-- [ ] P04: lista własnych rezerwacji z pakietem, lokalizacją i statusem.
-- [ ] P04: pusty stan i aktualizacja listy po zapisie.
+- [x] P03: wybór pakietu i odpowiednie pola formularza.
+- [x] P03: przejąć miejsce wybrane na mapie jako podpowiedź i sprawdzić zgodność z pakietem.
+- [x] P03: walidacja, zapis przez `fetch` i komunikat potwierdzenia.
+- [x] P03: automatyczny przydział oraz obsługa braku miejsc i konfliktu rezerwacji.
+- [x] P04: lista własnych rezerwacji z pakietem, lokalizacją i statusem.
+- [x] P04: pusty stan i aktualizacja listy po zapisie.
 
 ## Volodymyr — dostęp i panele pracowników
 
