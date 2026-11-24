@@ -33,6 +33,8 @@ Każdy właściciel odpowiada również za walidację, obsługę błędów, test
 
 **Aktualizacja 04.11.2026:** zaimplementowano F05–F07: pięciokrokową rezerwację na `/rezerwacje/nowa/` (typ i pojemność, poziom, pakiet z planem miejsc, dane, potwierdzenie), cennik liczony na serwerze, zapis chroniony przed podwójną rezerwacją, walidację PESEL bez jego przechowywania oraz `/moje-rezerwacje/`. Link z mapy prowadzi do kroku 1. Pełna ścieżka klienta czeka na logowanie F08.
 
+**Aktualizacja 24.11.2026 (issue #4):** wejście z mapy od razu zaznacza pakiet „Wybrane miejsce” w kroku 3, krok 5 pokazuje dane osobowe (PESEL zamaskowany), błędy kroku 4 są pod polami, a `/moje-rezerwacje/` pozwala anulować rezerwację z potwierdzeniem i pokazać miejsce na mapie.
+
 **[Mapa stron i podział pracy](docs/mapa-stron.md)** — schemat nawigacji, status każdej strony i checklisty osobno dla Romana, Viktora oraz Volodymyra.
 
 Stan początkowy na 27.10.2026: działa strona główna, nawigacja kotwicowa i menu mobilne. Mapa jest makietą, a liczby miejsc są przykładowe. Brak modeli miejsc i rezerwacji, formularzy logowania, paneli ról oraz API. Konfiguracja auth i sessions jest przygotowana, ale nie oznacza gotowego logowania.
@@ -53,9 +55,9 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 | F02 | [Interaktywna mapa](#f02) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
 | F03 | [Filtrowanie miejsc](#f03) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
 | F04 | [Szczegóły miejsca](#f04) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
-| F05 | [Pakiety rezerwacji](#f05) | @he4tegg | M2 | Zaimplementowane; pełna ścieżka czeka na logowanie F08 |
-| F06 | [Rezerwowanie miejsca](#f06) | @he4tegg | M2 | Zaimplementowane; pełna ścieżka czeka na logowanie F08 |
-| F07 | [Moje rezerwacje](#f07) | @he4tegg | M2 | Zaimplementowane; pełna ścieżka czeka na logowanie F08 |
+| F05 | [Pakiety rezerwacji](#f05) | @he4tegg | M2 | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
+| F06 | [Rezerwowanie miejsca](#f06) | @he4tegg | M2 | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
+| F07 | [Moje rezerwacje](#f07) | @he4tegg | M2 | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
 | F08 | [Logowanie i wylogowanie](#f08) | @Petruk-Volodymyr | M1 | Konfiguracja przygotowana; widoki do zrobienia |
 | F09 | [Role i uprawnienia](#f09) | @Petruk-Volodymyr | M1 | Do zrobienia |
 | F10 | [Panel zarządcy](#f10) | @Petruk-Volodymyr | M2 | Do zrobienia |
@@ -134,7 +136,15 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Najtrudniejsze:** dynamiczne pola formularza w JS oraz sprawdzenie tych samych ograniczeń na serwerze.
 
-**Gotowe, gdy:** pakiet udostępnia właściwy zakres wyboru, a serwer odrzuca wybór spoza pakietu. Projekt obejmuje demonstracyjny wybór pakietu bez rzeczywistej płatności.
+**Gotowe, gdy:** każdy pakiet udostępnia tylko swój zakres wyboru, a serwer odrzuca wybór spoza pakietu:
+
+- **Podstawowy:** miejsce przydzielane automatycznie z gruntu standardowego na wybranym poziomie.
+- **Sektor:** wybór sektora i opcjonalnie gruntu wzmocnionego; miejsce przydzielane w sektorze.
+- **Rząd:** wybór sektora i rzędu; miejsce przydzielane w rzędzie.
+- **Wybrane miejsce:** wybór konkretnego miejsca na planie.
+- **Wejście z mapy** (`?miejsce=<id>` z wolnym miejscem) = zaznaczony pakiet „Wybrane miejsce”, krok 3 z zaznaczonym miejscem; miejsce, które przestaje pasować do zmienionego wyboru, daje komunikat.
+
+Projekt obejmuje demonstracyjny wybór pakietu bez rzeczywistej płatności.
 
 <a id="f06"></a>
 ### F06. Rezerwowanie miejsca
@@ -149,14 +159,14 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Najtrudniejsze:** niedopuszczenie do podwójnej rezerwacji i obsługa błędów `fetch` bez utraty formularza.
 
-**Gotowe, gdy:** poprawny formularz zapisuje rezerwację i zmienia dostępność; błędy pól są czytelne, brak miejsc daje komunikat, a dwie próby rezerwacji tego samego miejsca kończą się najwyżej jednym aktywnym zapisem. Zapis jest chroniony transakcją i ograniczeniami bazy, a żądanie POST używa CSRF.
+**Gotowe, gdy:** poprawny formularz zapisuje rezerwację i zmienia dostępność; błędy pól są czytelne, brak miejsc daje komunikat, a dwie próby rezerwacji tego samego miejsca kończą się najwyżej jednym aktywnym zapisem. Zapis jest chroniony transakcją i ograniczeniami bazy, a żądanie POST używa CSRF. Front: krok 5 pokazuje do sprawdzenia dane osobowe i osobę, dla której jest miejsce (PESEL zamaskowany); błędy są wyświetlane pod polami (`aria-invalid`), a nie w dymkach przeglądarki; dane formularza pozostają po błędzie serwera lub sieci.
 
 <a id="f07"></a>
 ### F07. Moje rezerwacje
 
 **Właściciel:** Viktor Levchenko (@he4tegg).
 
-**Co robi użytkownik:** przegląda własne rezerwacje, ich status, pakiet i lokalizację miejsca.
+**Co robi użytkownik:** przegląda własne rezerwacje, ich status, pakiet i lokalizację miejsca, anuluje aktywną rezerwację i pokazuje miejsce na mapie.
 
 **Widok:** `/moje-rezerwacje/`.
 
@@ -164,7 +174,7 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Najtrudniejsze:** ochrona danych innych klientów i czytelny pusty stan.
 
-**Gotowe, gdy:** lista pozostaje po odświeżeniu, klient widzi wyłącznie własne dane, a nowe konto otrzymuje komunikat o braku rezerwacji.
+**Gotowe, gdy:** lista pozostaje po odświeżeniu, klient widzi wyłącznie własne dane, a nowe konto otrzymuje komunikat o braku rezerwacji. Przycisk „Anuluj” otwiera okno potwierdzenia (`<dialog>` z fokusem), anulowanie to POST z CSRF tylko dla własnej aktywnej rezerwacji i zwalnia miejsce; link „Pokaż na mapie” prowadzi do `/mapa/?miejsce=<id>`.
 
 <a id="f08"></a>
 ### F08. Logowanie i wylogowanie
