@@ -209,6 +209,21 @@
   max-width: 680px;
   margin-bottom: 18px;
 }
+.reservation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+#cancel-dialog {
+  max-width: min(440px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+}
+#cancel-dialog h2 {
+  margin-top: 0;
+}
 .reservation-card.is-new {
   border: 2px solid var(--green);
 }

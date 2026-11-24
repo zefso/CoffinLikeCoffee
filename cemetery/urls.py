@@ -21,6 +21,11 @@ urlpatterns = [
         name="my_reservations",
     ),
     path(
+        "moje-rezerwacje/<int:pk>/anuluj/",
+        reservation_views.reservation_cancel,
+        name="reservation_cancel",
+    ),
+    path(
         "logowanie/",
         auth_views.LoginView.as_view(
             template_name="cemetery/login.html",

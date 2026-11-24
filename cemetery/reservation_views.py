@@ -3,7 +3,7 @@ import json
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
@@ -16,6 +16,7 @@ from .reservations import (
     PACKAGES,
     REINFORCED_FEE,
     ReservationConflict,
+    cancel_reservation,
     create_reservation,
 )
 
@@ -111,5 +112,20 @@ def my_reservations(request):
     return render(
         request,
         "cemetery/my_reservations.html",
-        {"reservations": reservations, "new_id": request.GET.get("nowa", "")},
+        {
+            "reservations": reservations,
+            "new_id": request.GET.get("nowa", ""),
+            "cancelled_id": request.GET.get("anulowana", ""),
+        },
     )
+
+
+@login_required
+@require_POST
+def reservation_cancel(request, pk):
+    # Cudza lub już anulowana rezerwacja daje 404, żeby nie zdradzać jej istnienia.
+    reservation = get_object_or_404(
+        Reservation, pk=pk, customer=request.user, status=Reservation.Status.ACTIVE
+    )
+    cancel_reservation(reservation)
+    return redirect(f"{reverse('my_reservations')}?anulowana={pk}")
