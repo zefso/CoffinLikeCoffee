@@ -418,3 +418,60 @@ class ReservationTests(TestCase):
             "/logowanie/?next=/moje-rezerwacje/",
             fetch_redirect_response=False,
         )
+
+    def reserve_seat(self):
+        place = self.free(kind="adult")
+        self.assertEqual(self.seat(place).status_code, 201)
+        return Reservation.objects.get(place=place, status="active")
+
+    def test_cancel_own_reservation_frees_place(self):
+        reservation = self.reserve_seat()
+        response = self.client.post(f"/moje-rezerwacje/{reservation.pk}/anuluj/")
+        self.assertRedirects(
+            response,
+            f"/moje-rezerwacje/?anulowana={reservation.pk}",
+            fetch_redirect_response=False,
+        )
+        reservation.refresh_from_db()
+        reservation.place.refresh_from_db()
+        self.assertEqual(reservation.status, "cancelled")
+        self.assertEqual(reservation.place.status, "available")
+        page = self.client.get(response.url)
+        self.assertContains(page, "Rezerwacja została anulowana")
+        self.assertNotContains(page, "/anuluj/")
+        # Ponowne anulowanie tej samej rezerwacji jest odrzucane.
+        again = self.client.post(f"/moje-rezerwacje/{reservation.pk}/anuluj/")
+        self.assertEqual(again.status_code, 404)
+
+    def test_cannot_cancel_someone_elses_reservation(self):
+        reservation = self.reserve_seat()
+        other = Client()
+        other.force_login(self.other)
+        response = other.post(f"/moje-rezerwacje/{reservation.pk}/anuluj/")
+        self.assertEqual(response.status_code, 404)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, "active")
+
+    def test_cancel_requires_post_login_and_csrf(self):
+        reservation = self.reserve_seat()
+        url = f"/moje-rezerwacje/{reservation.pk}/anuluj/"
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.assertRedirects(
+            Client().post(url),
+            f"/logowanie/?next={url}",
+            fetch_redirect_response=False,
+        )
+        csrf = Client(enforce_csrf_checks=True)
+        csrf.force_login(self.user)
+        self.assertEqual(csrf.post(url).status_code, 403)
+        reservation.refresh_from_db()
+        self.assertEqual(reservation.status, "active")
+
+    def test_my_reservations_has_cancel_dialog_map_link_and_header(self):
+        reservation = self.reserve_seat()
+        response = self.client.get("/moje-rezerwacje/")
+        self.assertContains(response, f"/moje-rezerwacje/{reservation.pk}/anuluj/")
+        self.assertContains(response, f"/mapa/?miejsce={reservation.place_id}")
+        self.assertContains(response, '<dialog id="cancel-dialog"')
+        self.assertContains(response, 'action="/wylogowanie/"')
+        self.assertContains(Client().get("/rezerwacje/nowa/"), ">Zaloguj</a>")
