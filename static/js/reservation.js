@@ -363,6 +363,7 @@
       node.removeAttribute("aria-invalid");
     });
   }
+  // Wspólne dla błędów z serwera i walidacji w przeglądarce; zwraca błąd bez pola.
   function showFieldErrors(errors) {
     let other = "";
     Object.entries(errors).forEach(([name, text]) => {
@@ -372,10 +373,18 @@
         fields[name].setAttribute("aria-invalid", "true");
       } else other = text;
     });
-    if (other) {
-      go(3);
-      alertMessage(other);
-    } else go(4);
+    return other;
+  }
+  function browserErrors() {
+    const errors = {};
+    steps[3].querySelectorAll("input").forEach((input) => {
+      if (!input.willValidate || input.validity.valid) return;
+      if (input.validity.valueMissing) errors[input.name] = "To pole jest wymagane.";
+      else if (input.type === "email") errors[input.name] = "Podaj poprawny adres email.";
+      else if (input.name.endsWith("pesel")) errors[input.name] = "PESEL musi mieć 11 cyfr.";
+      else errors[input.name] = "Sprawdź wartość tego pola.";
+    });
+    return errors;
   }
   function payload() {
     const c = choice();
@@ -421,7 +430,9 @@
       if (response.status === 201) {
         location.href = data.url;
       } else if (response.status === 400 && data.errors) {
-        showFieldErrors(data.errors);
+        const other = showFieldErrors(data.errors);
+        go(other ? 3 : 4);
+        alertMessage(other);
       } else if (response.status === 409) {
         fields.place.value = "";
         await loadPlaces();
@@ -512,11 +523,11 @@
     alertMessage(problem);
     if (problem) return;
     if (step === 4) {
-      const invalid = [...steps[3].querySelectorAll("input")].find(
-        (input) => !input.disabled && !input.checkValidity()
-      );
-      if (invalid) {
-        invalid.reportValidity();
+      clearErrors();
+      const errors = browserErrors();
+      if (Object.keys(errors).length) {
+        showFieldErrors(errors);
+        steps[3].querySelector("[aria-invalid]").focus();
         return;
       }
     }
