@@ -1,0 +1,6 @@
+<a href="{% url 'my_reservations' %}">Moje rezerwacje</a>
+{% if user.is_authenticated %}
+  <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Wyloguj</button></form>
+{% else %}
+  <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Zaloguj</a>
+{% endif %}
