@@ -1,3 +1,33 @@
+/* Strony rezerwacji mają więcej linków w nagłówku, więc może się on zawijać. */
+.site-header {
+  height: auto;
+  min-height: 90px;
+  gap: 12px;
+}
+.header-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px 20px;
+}
+.header-links a,
+.header-links form {
+  margin: 0;
+}
+.header-links button {
+  color: #254332;
+  text-underline-offset: 4px;
+}
+.header-links button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
 .reservation-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -191,6 +221,7 @@
   border: 1px solid var(--line);
 }
 .reservation-message {
+  margin: 0 0 12px;
   padding: 12px 16px;
   border-radius: 10px;
   background: #f8e4e0;
@@ -207,6 +238,23 @@
   position: static;
   max-width: 680px;
   margin-bottom: 18px;
+}
+.reservation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+#cancel-dialog {
+  max-width: min(440px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+}
+#cancel-dialog h2 {
+  margin-top: 0;
+  font-size: 24px;
+  letter-spacing: normal;
 }
 .reservation-card.is-new {
   border: 2px solid var(--green);

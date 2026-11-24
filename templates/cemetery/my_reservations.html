@@ -8,10 +8,11 @@
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
     <link rel="stylesheet" href="{% static 'css/map.css' %}">
     <link rel="stylesheet" href="{% static 'css/reservation.css' %}">
+    <script defer src="{% static 'js/my-reservations.js' %}"></script>
   </head>
   <body>
     <a class="skip-link" href="#reservations">Przejdź do rezerwacji</a>
-    <header class="site-header"><a class="brand" href="{% url 'home' %}"><span class="brand-mark">✦</span><span><strong>Horyzont</strong><small>miejsce pamięci</small></span></a><a href="{% url 'map' %}">← Mapa miejsc</a></header>
+    <header class="site-header"><a class="brand" href="{% url 'home' %}"><span class="brand-mark">✦</span><span><strong>Horyzont</strong><small>miejsce pamięci</small></span></a><nav class="header-links" aria-label="Nawigacja"><a href="{% url 'map' %}">← Mapa miejsc</a>{% include "cemetery/_header_links.html" %}</nav></header>
     <main id="reservations" class="map-page reservation-page">
       <div class="map-heading">
         <p class="eyebrow">TWOJE KONTO</p>
@@ -20,6 +21,7 @@
       {% for reservation in reservations %}
         <article class="place-details reservation-card{% if reservation.pk|stringformat:'d' == new_id %} is-new{% endif %}">
           {% if reservation.pk|stringformat:'d' == new_id %}<p role="status"><strong>Rezerwacja została zapisana.</strong> Nie pobieramy płatności.</p>{% endif %}
+          {% if reservation.pk|stringformat:'d' == cancelled_id and reservation.status == "cancelled" %}<p role="status"><strong>Rezerwacja została anulowana.</strong> Miejsce wróciło do puli wolnych.</p>{% endif %}
           <h2>{{ reservation.place.code }}</h2>
           <dl>
             <dt>Status</dt><dd>{{ reservation.get_status_display }}</dd>
@@ -35,11 +37,28 @@
           <ul>
             {% for benefit in reservation.benefits %}<li>{{ benefit }}</li>{% endfor %}
           </ul>
+          <div class="reservation-actions">
+            <a href="{% url 'map' %}?miejsce={{ reservation.place_id }}&amp;level={{ reservation.place.level }}&amp;sector={{ reservation.place.sector }}">Pokaż na mapie</a>
+            {% if reservation.status == "active" %}
+              <form method="post" action="{% url 'reservation_cancel' reservation.pk %}" data-cancel="{{ reservation.place.code }}">
+                {% csrf_token %}
+                <button class="quiet-button" type="submit">Anuluj</button>
+              </form>
+            {% endif %}
+          </div>
         </article>
       {% empty %}
         <p>Nie masz jeszcze żadnych rezerwacji.</p>
         <a class="booking-link" href="{% url 'map' %}">Znajdź miejsce na mapie →</a>
       {% endfor %}
+      <dialog id="cancel-dialog" aria-labelledby="cancel-title" aria-describedby="cancel-text">
+        <h2 id="cancel-title">Anulować rezerwację?</h2>
+        <p id="cancel-text"></p>
+        <div class="step-buttons">
+          <button id="cancel-keep" class="quiet-button" type="button" autofocus>Nie, zostaw</button>
+          <button id="cancel-confirm" class="button button-dark" type="button">Tak, anuluj</button>
+        </div>
+      </dialog>
     </main>
     <footer class="map-footer">Horyzont · Projekt studencki <a href="{% url 'reservation_create' %}">Nowa rezerwacja</a></footer>
   </body>

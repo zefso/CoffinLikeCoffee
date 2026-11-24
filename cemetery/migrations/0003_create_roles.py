@@ -14,7 +14,7 @@ def remove_roles(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cemetery', '0002_reservation.py'),
+        ('cemetery', '0002_reservation'),
     ]
 
     operations = [

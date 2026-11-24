@@ -13,6 +13,7 @@
   const seats = document.getElementById("seats");
   const beneficiary = document.getElementById("beneficiary");
   const loginLink = document.getElementById("login-link");
+  const mapLink = document.getElementById("map-link");
   const labels = {
     adult: "Dla dorosłych",
     child: "Dla dzieci",
@@ -30,6 +31,7 @@
   const urlFields = ["kind", "capacity", "level", "package", "sector", "row"];
   let places = [];
   let step = 1;
+  let mapPlace = "";
 
   const money = (amount) =>
     String(amount).replace(/\B(?=(\d{3})+$)/g, " ") + " zł";
@@ -63,6 +65,11 @@
   function showMessage(text) {
     message.textContent = text;
     message.hidden = !text;
+  }
+  // Po akcji użytkownika komunikat dostaje fokus, więc jest widoczny także na telefonie.
+  function alertMessage(text) {
+    showMessage(text);
+    if (text) message.focus();
   }
   function setRadio(name, value) {
     form.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
@@ -149,6 +156,7 @@
     ) {
       fields.place.value = "";
       c.place = "";
+      showMessage(`Miejsce ${picked.code} nie pasuje do nowego wyboru.`);
     }
     c.row = fields.row.value;
     drawSeats(c, allSeats, open);
@@ -246,13 +254,35 @@
     if (c.level) rows.push(["Poziom", pricing.levelNames[c.level]]);
     if (c.package) rows.push(["Pakiet", pricing.packageNames[c.package]]);
     const picked = c.package === "place" ? seat() : null;
-    if (picked) rows.push(["Miejsce", picked.code]);
+    if (picked) {
+      rows.push([String(picked.id) === mapPlace ? "Miejsce z mapy" : "Miejsce", picked.code]);
+    }
     else if (c.package === "sector" || c.package === "row") {
       if (c.sector) rows.push(["Sektor", c.sector]);
       if (c.package === "row" && c.row) rows.push(["Rząd", c.row]);
     }
     if (c.package) {
       rows.push(["Grunt", reinforcedNow(c) ? "Wzmocniony" : "Standardowy"]);
+    }
+    return rows;
+  }
+  // PESEL nie trafia na ekran w całości; widać tylko dwie ostatnie cyfry.
+  const masked = (pesel) => (pesel ? "•".repeat(9) + pesel.trim().slice(-2) : "—");
+  const value = (name) => fields[name].value.trim();
+  function personRows() {
+    if (!fields.first_name) return [];
+    const rows = [
+      ["Rezerwujący", `${value("first_name")} ${value("last_name")}`],
+      ["Email", value("email")],
+      ["Telefon", value("phone")],
+      ["PESEL", masked(value("pesel"))],
+    ];
+    if (fields.for_self.checked) rows.push(["Dla kogo", "Rezerwuję dla siebie"]);
+    else {
+      rows.push(
+        ["Dla kogo", `${value("beneficiary_first_name")} ${value("beneficiary_last_name")}`],
+        ["PESEL osoby", masked(value("beneficiary_pesel"))]
+      );
     }
     return rows;
   }
@@ -271,6 +301,14 @@
     if (step > 1) query.set("step", step);
     const url = location.pathname + (query.size ? "?" + query : "");
     history[push ? "pushState" : "replaceState"]({}, "", url);
+    // Mapa używa tych samych nazw filtrów: level, sector, kind, capacity.
+    const mapQuery = new URLSearchParams();
+    ["level", "sector", "kind", "capacity"].forEach((name) => {
+      if (c[name]) mapQuery.set(name, c[name]);
+    });
+    if (!c.package || c.package === "basic") mapQuery.delete("sector");
+    if (c.place) mapQuery.set("miejsce", c.place);
+    mapLink.href = mapLink.pathname + (mapQuery.size ? "?" + mapQuery : "");
     if (loginLink) {
       const loginQuery = new URLSearchParams(query);
       loginQuery.set("step", 4);
@@ -286,7 +324,7 @@
     const rows = summaryRows(c);
     const total = price(c);
     drawList(document.getElementById("summary"), rows);
-    drawList(document.getElementById("review"), rows);
+    drawList(document.getElementById("review"), [...rows, ...personRows()]);
     document.getElementById("total").textContent = total ? money(total) : "—";
     steps.forEach((section) => {
       section.hidden = Number(section.dataset.step) !== step;
@@ -325,6 +363,7 @@
       node.removeAttribute("aria-invalid");
     });
   }
+  // Wspólne dla błędów z serwera i walidacji w przeglądarce; zwraca błąd bez pola.
   function showFieldErrors(errors) {
     let other = "";
     Object.entries(errors).forEach(([name, text]) => {
@@ -334,10 +373,18 @@
         fields[name].setAttribute("aria-invalid", "true");
       } else other = text;
     });
-    if (other) {
-      showMessage(other);
-      go(3);
-    } else go(4);
+    return other;
+  }
+  function browserErrors() {
+    const errors = {};
+    steps[3].querySelectorAll("input").forEach((input) => {
+      if (!input.willValidate || input.validity.valid) return;
+      if (input.validity.valueMissing) errors[input.name] = "To pole jest wymagane.";
+      else if (input.type === "email") errors[input.name] = "Podaj poprawny adres email.";
+      else if (input.name.endsWith("pesel")) errors[input.name] = "PESEL musi mieć 11 cyfr.";
+      else errors[input.name] = "Sprawdź wartość tego pola.";
+    });
+    return errors;
   }
   function payload() {
     const c = choice();
@@ -383,21 +430,23 @@
       if (response.status === 201) {
         location.href = data.url;
       } else if (response.status === 400 && data.errors) {
-        showFieldErrors(data.errors);
+        const other = showFieldErrors(data.errors);
+        go(other ? 3 : 4);
+        alertMessage(other);
       } else if (response.status === 409) {
-        showMessage(data.error);
         fields.place.value = "";
         await loadPlaces();
         go(3);
+        alertMessage(data.error);
       } else if (response.status === 401 || response.status === 403) {
-        showMessage(
+        alertMessage(
           "Sesja wygasła. Zaloguj się w nowej karcie i odśwież stronę; wybór pozostanie w adresie."
         );
       } else {
-        showMessage(data.error || "Nie udało się zapisać rezerwacji. Spróbuj ponownie.");
+        alertMessage(data.error || "Nie udało się zapisać rezerwacji. Spróbuj ponownie.");
       }
     } catch {
-      showMessage("Brak połączenia. Twoje dane pozostały w formularzu, spróbuj ponownie.");
+      alertMessage("Brak połączenia. Twoje dane pozostały w formularzu, spróbuj ponownie.");
     } finally {
       submit.disabled = false;
     }
@@ -415,21 +464,25 @@
     fields.reinforced.checked = query.get("reinforced") === "1";
     fields.place.value = query.get("miejsce") || "";
     const picked = seat();
+    const fromMap = picked && !query.has("kind");
+    mapPlace = fromMap ? String(picked.id) : "";
     if (fields.place.value && (!picked || picked.status !== "available")) {
       fields.place.value = "";
+      mapPlace = "";
       showMessage("Wybrane na mapie miejsce nie jest już wolne. Wybierz inne poniżej.");
-    } else if (picked && !query.has("kind")) {
-      // Wejście z mapy: proces zaczyna się od kroku 1, a miejsce tylko podpowiada wybór.
+    } else if (fromMap) {
+      // Wejście z mapy: pakiet „Wybrane miejsce” i od razu krok 3 z zaznaczonym miejscem.
       setRadio("kind", picked.kind);
       setRadio("capacity", picked.capacity);
       setRadio("level", String(picked.level));
+      setRadio("package", "place");
     }
     refreshChoices();
-    fields.sector.value = query.get("sector") || "";
+    fields.sector.value = fromMap ? picked.sector : query.get("sector") || "";
     refreshChoices();
     fields.row.value = query.get("row") || "";
     // Krok z URL obowiązuje tylko, gdy poprzednie kroki są uzupełnione.
-    const wanted = Math.min(Number(query.get("step")) || 1, loginLink ? 4 : 5);
+    const wanted = fromMap ? 3 : Math.min(Number(query.get("step")) || 1, loginLink ? 4 : 5);
     step = 1;
     while (step < wanted && !stepProblem()) step += 1;
     render();
@@ -467,14 +520,14 @@
   });
   next.addEventListener("click", () => {
     const problem = stepProblem();
-    showMessage(problem);
+    alertMessage(problem);
     if (problem) return;
     if (step === 4) {
-      const invalid = [...steps[3].querySelectorAll("input")].find(
-        (input) => !input.disabled && !input.checkValidity()
-      );
-      if (invalid) {
-        invalid.reportValidity();
+      clearErrors();
+      const errors = browserErrors();
+      if (Object.keys(errors).length) {
+        showFieldErrors(errors);
+        steps[3].querySelector("[aria-invalid]").focus();
         return;
       }
     }
