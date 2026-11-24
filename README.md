@@ -27,6 +27,8 @@ Każdy właściciel odpowiada również za walidację, obsługę błędów, test
 
 ## Stan projektu i etapy
 
+**Aktualizacja 05.11.2026:**Zaimplementowano moduły F08 oraz F09: skonfigurowano uwierzytelnianie użytkowników (logowanie/wylogowanie) z wykorzystaniem widoków Django oraz dodano system ról i uprawnień (Klient, Zarządca, Administrator) wraz z dedykowanymi dekoratorami w pliku permissions.py do ochrony widoków oraz API.
+
 **Aktualizacja 03.11.2026:** zaimplementowano `/mapa/` z widokiem 3D z boku, przełącznikiem 2D, obrotem i powiększeniem, filtry w URL, szczegóły miejsc, model `Place` i API JSON. [Kontrakt integracji i przygotowanie danych](docs/integracja-mapy.md). F02–F04 są zaimplementowane; końcowy odbiór UI i połączenie z formularzem rezerwacji pozostają do weryfikacji.
 
 **Aktualizacja 04.11.2026:** zaimplementowano F05–F07: pięciokrokową rezerwację na `/rezerwacje/nowa/` (typ i pojemność, poziom, pakiet z planem miejsc, dane, potwierdzenie), cennik liczony na serwerze, zapis chroniony przed podwójną rezerwacją, walidację PESEL bez jego przechowywania oraz `/moje-rezerwacje/`. Link z mapy prowadzi do kroku 1. Pełna ścieżka klienta czeka na logowanie F08.
