@@ -12,6 +12,9 @@
   gap: 8px 20px;
 }
 .header-links a,
+.header-links form {
+  margin: 0;
+}
 .header-links button {
   color: #254332;
   text-underline-offset: 4px;
@@ -250,6 +253,8 @@
 }
 #cancel-dialog h2 {
   margin-top: 0;
+  font-size: 24px;
+  letter-spacing: normal;
 }
 .reservation-card.is-new {
   border: 2px solid var(--green);
