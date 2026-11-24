@@ -18,39 +18,84 @@
         <p class="eyebrow">TWOJE KONTO</p>
         <h1>Moje <em>rezerwacje.</em></h1>
       </div>
-      {% for reservation in reservations %}
-        <article class="place-details reservation-card{% if reservation.pk|stringformat:'d' == new_id %} is-new{% endif %}">
-          {% if reservation.pk|stringformat:'d' == new_id %}<p role="status"><strong>Rezerwacja została zapisana.</strong> Nie pobieramy płatności.</p>{% endif %}
-          {% if reservation.pk|stringformat:'d' == cancelled_id and reservation.status == "cancelled" %}<p role="status"><strong>Rezerwacja została anulowana.</strong> Miejsce wróciło do puli wolnych.</p>{% endif %}
-          <h2>{{ reservation.place.code }}</h2>
-          <dl>
-            <dt>Status</dt><dd>{{ reservation.get_status_display }}</dd>
-            <dt>Pakiet</dt><dd>{{ reservation.get_package_display }}</dd>
-            <dt>Poziom</dt><dd>{{ reservation.level_name }}</dd>
-            <dt>Sektor</dt><dd>{{ reservation.place.sector }}</dd>
-            <dt>Rząd i miejsce</dt><dd>{{ reservation.place.row }} / {{ reservation.place.number }}</dd>
-            <dt>Grunt</dt><dd>{{ reservation.place.get_ground_display }}</dd>
-            <dt>Dla kogo</dt><dd>{{ reservation.beneficiary_first_name }} {{ reservation.beneficiary_last_name }}</dd>
-            <dt>Cena</dt><dd>{{ reservation.price_label }}</dd>
-            <dt>Data</dt><dd>{{ reservation.created_at|date:"d.m.Y H:i" }}</dd>
+
+      {% if request.user.is_authenticated %}
+        <section class="account-profile-card" aria-label="Dane konta">
+          <h2>Dane konta</h2>
+          <dl class="account-profile-grid">
+            <div>
+              <dt>Imię i nazwisko</dt>
+              <dd>{% if request.user.first_name or request.user.last_name %}{{ request.user.first_name }} {{ request.user.last_name }}{% else %}—{% endif %}</dd>
+            </div>
+            <div>
+              <dt>E-mail</dt>
+              <dd>{{ request.user.email|default:"—" }}</dd>
+            </div>
+            <div>
+              <dt>Login</dt>
+              <dd>{{ request.user.username }}</dd>
+            </div>
           </dl>
-          <ul>
-            {% for benefit in reservation.benefits %}<li>{{ benefit }}</li>{% endfor %}
-          </ul>
-          <div class="reservation-actions">
-            <a href="{% url 'map' %}?miejsce={{ reservation.place_id }}&amp;level={{ reservation.place.level }}&amp;sector={{ reservation.place.sector }}">Pokaż na mapie</a>
-            {% if reservation.status == "active" %}
-              <form method="post" action="{% url 'reservation_cancel' reservation.pk %}" data-cancel="{{ reservation.place.code }}">
-                {% csrf_token %}
-                <button class="quiet-button" type="submit">Anuluj</button>
-              </form>
-            {% endif %}
-          </div>
-        </article>
-      {% empty %}
-        <p>Nie masz jeszcze żadnych rezerwacji.</p>
-        <a class="booking-link" href="{% url 'map' %}">Znajdź miejsce na mapie →</a>
-      {% endfor %}
+        </section>
+      {% endif %}
+
+      <div class="reservations-tiles">
+        {% for reservation in reservations %}
+          {% with is_new=reservation.pk|stringformat:'d' %}
+          <details class="reservation-tile reservation-card{% if is_new == new_id %} is-new{% endif %}" {% if is_new == new_id or is_new == cancelled_id %}open{% endif %}>
+            <summary class="reservation-tile-summary">
+              <span class="tile-main">
+                <strong class="tile-place-code">{{ reservation.place.code }}</strong>
+                <span class="tile-sub">{{ reservation.level_name }} · {{ reservation.get_status_display }}</span>
+              </span>
+              <span class="tile-meta">
+                <span class="tile-price">{{ reservation.price_label }}</span>
+              </span>
+            </summary>
+
+            <div class="reservation-tile-body">
+              {% if is_new == new_id %}<p role="status"><strong>Rezerwacja została zapisana.</strong> Nie pobieramy płatności.</p>{% endif %}
+              {% if is_new == cancelled_id and reservation.status == "cancelled" %}<p role="status"><strong>Rezerwacja została anulowana.</strong> Miejsce wróciło do puli wolnych.</p>{% endif %}
+
+              <dl class="tile-details-list">
+                <div><dt>Imię i nazwisko (konto)</dt><dd>{% if request.user.first_name or request.user.last_name %}{{ request.user.first_name }} {{ request.user.last_name }}{% else %}—{% endif %}</dd></div>
+                <div><dt>E-mail (konto)</dt><dd>{{ request.user.email|default:"—" }}</dd></div>
+                <div><dt>Login (konto)</dt><dd>{{ request.user.username }}</dd></div>
+                <div><dt>Status</dt><dd>{{ reservation.get_status_display }}</dd></div>
+                <div><dt>Pakiet</dt><dd>{{ reservation.get_package_display }}</dd></div>
+                <div><dt>Poziom</dt><dd>{{ reservation.level_name }}</dd></div>
+                <div><dt>Sektor</dt><dd>{{ reservation.place.sector }}</dd></div>
+                <div><dt>Rząd i miejsce</dt><dd>{{ reservation.place.row }} / {{ reservation.place.number }}</dd></div>
+                <div><dt>Grunt</dt><dd>{{ reservation.place.get_ground_display }}</dd></div>
+                <div><dt>Dla kogo</dt><dd>{{ reservation.beneficiary_first_name }} {{ reservation.beneficiary_last_name }}</dd></div>
+                <div><dt>Cena</dt><dd>{{ reservation.price_label }}</dd></div>
+                <div><dt>Data</dt><dd>{{ reservation.created_at|date:"d.m.Y H:i" }}</dd></div>
+              </dl>
+
+              {% if reservation.benefits %}
+                <ul class="tile-benefits">
+                  {% for benefit in reservation.benefits %}<li>{{ benefit }}</li>{% endfor %}
+                </ul>
+              {% endif %}
+
+              <div class="reservation-actions">
+                <a href="{% url 'map' %}?miejsce={{ reservation.place_id }}&amp;level={{ reservation.place.level }}&amp;sector={{ reservation.place.sector }}">Pokaż na mapie</a>
+                {% if reservation.status == "active" %}
+                  <form method="post" action="{% url 'reservation_cancel' reservation.pk %}" data-cancel="{{ reservation.place.code }}">
+                    {% csrf_token %}
+                    <button class="quiet-button" type="submit">Anuluj</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </details>
+          {% endwith %}
+        {% empty %}
+          <p>Nie masz jeszcze żadnych rezerwacji.</p>
+          <a class="booking-link" href="{% url 'map' %}">Znajdź miejsce na mapie →</a>
+        {% endfor %}
+      </div>
+
       <dialog id="cancel-dialog" aria-labelledby="cancel-title" aria-describedby="cancel-text">
         <h2 id="cancel-title">Anulować rezerwację?</h2>
         <p id="cancel-text"></p>

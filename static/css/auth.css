@@ -45,7 +45,8 @@ body.auth-page {
 
 .auth-form input[type="text"],
 .auth-form input[type="password"],
-.auth-form input[type="date"] {
+.auth-form input[type="date"],
+.auth-form input[type="email"] {
   width: 100%;
   padding: 10px 12px;
   background-color: var(--paper);
