@@ -23,8 +23,6 @@
         <h1>Wybierz <em>spokojnie.</em></h1>
         <p class="demo-note">Wersja demonstracyjna · kwoty przykładowe · bez płatności · prawo do miejsca na 20 lat</p>
       </div>
-      <p id="reservation-message" class="reservation-message" role="alert" hidden></p>
-      <button id="reservation-retry" class="quiet-button" type="button" hidden>Spróbuj ponownie</button>
       <noscript>Włącz JavaScript, aby dokonać rezerwacji.</noscript>
       <div class="reservation-layout">
         <form id="reservation-form" novalidate>
@@ -121,6 +119,8 @@
             <p>Sprawdź wybór i swoje dane. Po potwierdzeniu miejsce zostanie zarezerwowane na Twoje konto.</p>
             <dl id="review"></dl>
           </section>
+          <p id="reservation-message" class="reservation-message" role="alert" tabindex="-1" hidden></p>
+          <button id="reservation-retry" class="quiet-button" type="button" hidden>Spróbuj ponownie</button>
           <div class="step-buttons">
             <button id="step-back" class="quiet-button" type="button">← Wstecz</button>
             <button id="step-next" class="button button-dark" type="button">Dalej →</button>

@@ -66,6 +66,11 @@
     message.textContent = text;
     message.hidden = !text;
   }
+  // Po akcji użytkownika komunikat dostaje fokus, więc jest widoczny także na telefonie.
+  function alertMessage(text) {
+    showMessage(text);
+    if (text) message.focus();
+  }
   function setRadio(name, value) {
     form.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
       input.checked = input.value === value;
@@ -368,8 +373,8 @@
       } else other = text;
     });
     if (other) {
-      showMessage(other);
       go(3);
+      alertMessage(other);
     } else go(4);
   }
   function payload() {
@@ -418,19 +423,19 @@
       } else if (response.status === 400 && data.errors) {
         showFieldErrors(data.errors);
       } else if (response.status === 409) {
-        showMessage(data.error);
         fields.place.value = "";
         await loadPlaces();
         go(3);
+        alertMessage(data.error);
       } else if (response.status === 401 || response.status === 403) {
-        showMessage(
+        alertMessage(
           "Sesja wygasła. Zaloguj się w nowej karcie i odśwież stronę; wybór pozostanie w adresie."
         );
       } else {
-        showMessage(data.error || "Nie udało się zapisać rezerwacji. Spróbuj ponownie.");
+        alertMessage(data.error || "Nie udało się zapisać rezerwacji. Spróbuj ponownie.");
       }
     } catch {
-      showMessage("Brak połączenia. Twoje dane pozostały w formularzu, spróbuj ponownie.");
+      alertMessage("Brak połączenia. Twoje dane pozostały w formularzu, spróbuj ponownie.");
     } finally {
       submit.disabled = false;
     }
@@ -504,7 +509,7 @@
   });
   next.addEventListener("click", () => {
     const problem = stepProblem();
-    showMessage(problem);
+    alertMessage(problem);
     if (problem) return;
     if (step === 4) {
       const invalid = [...steps[3].querySelectorAll("input")].find(

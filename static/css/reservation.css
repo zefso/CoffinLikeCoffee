@@ -191,6 +191,7 @@
   border: 1px solid var(--line);
 }
 .reservation-message {
+  margin: 0 0 12px;
   padding: 12px 16px;
   border-radius: 10px;
   background: #f8e4e0;
