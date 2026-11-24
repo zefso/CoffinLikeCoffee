@@ -150,6 +150,7 @@
     ) {
       fields.place.value = "";
       c.place = "";
+      showMessage(`Miejsce ${picked.code} nie pasuje do nowego wyboru.`);
     }
     c.row = fields.row.value;
     drawSeats(c, allSeats, open);
