@@ -54,7 +54,7 @@ Dopóki trasa `reservation_create` nie istnieje, mapa wyświetla komunikat o prz
 
 ## Rezerwacje: stan po integracji (04.11.2026)
 
-Trasa `reservation_create` istnieje, więc mapa pokazuje link do `/rezerwacje/nowa/?miejsce=<id>`. Proces zawsze startuje od kroku 1. Miejsce z mapy tylko podpowiada typ, pojemność i poziom, a na planie jest zaznaczone dopiero po wyborze pakietu „Wybrane miejsce”.
+Trasa `reservation_create` istnieje, więc mapa pokazuje link do `/rezerwacje/nowa/?miejsce=<id>`. Wejście z wolnym miejscem z mapy ustawia typ, pojemność, poziom, pakiet „Wybrane miejsce” i sektor, a proces startuje od kroku 3 z miejscem zaznaczonym na planie (`aria-pressed`) i wierszem „Miejsce z mapy” w podsumowaniu. Zajęte lub nieistniejące miejsce daje komunikat i start od kroku 1.
 
 Przy pakietach z przydziałem automatycznym ten sam plan jest podglądem puli: pokazuje poziom, sektor lub rząd i obramowuje miejsca, z których serwer może losować. Nie jest klikalny.
 

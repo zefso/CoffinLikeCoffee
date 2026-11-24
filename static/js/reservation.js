@@ -30,6 +30,7 @@
   const urlFields = ["kind", "capacity", "level", "package", "sector", "row"];
   let places = [];
   let step = 1;
+  let mapPlace = "";
 
   const money = (amount) =>
     String(amount).replace(/\B(?=(\d{3})+$)/g, " ") + " zł";
@@ -246,7 +247,9 @@
     if (c.level) rows.push(["Poziom", pricing.levelNames[c.level]]);
     if (c.package) rows.push(["Pakiet", pricing.packageNames[c.package]]);
     const picked = c.package === "place" ? seat() : null;
-    if (picked) rows.push(["Miejsce", picked.code]);
+    if (picked) {
+      rows.push([String(picked.id) === mapPlace ? "Miejsce z mapy" : "Miejsce", picked.code]);
+    }
     else if (c.package === "sector" || c.package === "row") {
       if (c.sector) rows.push(["Sektor", c.sector]);
       if (c.package === "row" && c.row) rows.push(["Rząd", c.row]);
@@ -415,21 +418,25 @@
     fields.reinforced.checked = query.get("reinforced") === "1";
     fields.place.value = query.get("miejsce") || "";
     const picked = seat();
+    const fromMap = picked && !query.has("kind");
+    mapPlace = fromMap ? String(picked.id) : "";
     if (fields.place.value && (!picked || picked.status !== "available")) {
       fields.place.value = "";
+      mapPlace = "";
       showMessage("Wybrane na mapie miejsce nie jest już wolne. Wybierz inne poniżej.");
-    } else if (picked && !query.has("kind")) {
-      // Wejście z mapy: proces zaczyna się od kroku 1, a miejsce tylko podpowiada wybór.
+    } else if (fromMap) {
+      // Wejście z mapy: pakiet „Wybrane miejsce” i od razu krok 3 z zaznaczonym miejscem.
       setRadio("kind", picked.kind);
       setRadio("capacity", picked.capacity);
       setRadio("level", String(picked.level));
+      setRadio("package", "place");
     }
     refreshChoices();
-    fields.sector.value = query.get("sector") || "";
+    fields.sector.value = fromMap ? picked.sector : query.get("sector") || "";
     refreshChoices();
     fields.row.value = query.get("row") || "";
     // Krok z URL obowiązuje tylko, gdy poprzednie kroki są uzupełnione.
-    const wanted = Math.min(Number(query.get("step")) || 1, loginLink ? 4 : 5);
+    const wanted = fromMap ? 3 : Math.min(Number(query.get("step")) || 1, loginLink ? 4 : 5);
     step = 1;
     while (step < wanted && !stepProblem()) step += 1;
     render();
