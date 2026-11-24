@@ -161,11 +161,18 @@
     c.row = fields.row.value;
     drawSeats(c, allSeats, open);
     if (fields.for_self) {
-      fields.for_self.disabled = c.kind === "child";
-      if (fields.for_self.disabled) fields.for_self.checked = false;
-      beneficiary.disabled = fields.for_self.checked;
-      beneficiary.hidden = fields.for_self.checked;
-    }
+  fields.for_self.disabled = c.kind === "child";
+  if (fields.for_self.disabled) fields.for_self.checked = false;
+  beneficiary.disabled = fields.for_self.checked;
+  beneficiary.hidden = fields.for_self.checked;
+  if (fields.for_self.checked) {
+    ["beneficiary_first_name", "beneficiary_last_name", "beneficiary_pesel"].forEach((name) => {
+      const err = document.getElementById(`error-${name}`);
+      if (err) err.textContent = "";
+      if (fields[name]) fields[name].removeAttribute("aria-invalid");
+    });
+  }
+}
   }
   function seatLabel(p) {
     const reinforced = p.ground === "reinforced";

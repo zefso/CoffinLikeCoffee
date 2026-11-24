@@ -205,6 +205,57 @@
   color: var(--muted);
   font-size: 14px;
 }
+
+.step-review #review {
+  margin: 16px 0 0;
+  padding: 16px 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.step-review #review dt {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 10px;
+}
+.step-review #review dt:first-child {
+  margin-top: 0;
+}
+.step-review #review dd {
+  margin: 2px 0 0;
+  padding-bottom: 10px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+.step-review #review dd:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.step-review #review > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.step-review #review > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.step-review #review > div dt,
+.step-review #review > div dd {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.step-review #review > div dd {
+  text-align: right;
+}
+
 .step-buttons {
   display: flex;
   justify-content: space-between;
@@ -259,6 +310,188 @@
 .reservation-card.is-new {
   border: 2px solid var(--green);
 }
+
+.account-profile-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  max-width: 960px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+.account-profile-card h2 {
+  margin: 0 0 14px;
+  font: 600 22px "Playfair Display", Georgia, serif;
+  letter-spacing: normal;
+  color: var(--ink);
+}
+.account-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+.account-profile-grid > div {
+  display: grid;
+  gap: 4px;
+}
+.account-profile-grid dt {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.account-profile-grid dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  word-break: break-word;
+}
+.reservations-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: start;
+  max-width: 960px;
+}
+.reservation-tile.reservation-card {
+  position: static;
+  max-width: none;
+  margin-bottom: 0;
+  padding: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+.reservation-tile.is-new {
+  border: 2px solid var(--green);
+}
+.reservation-tile-summary {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  background: var(--paper);
+  transition: background-color 0.15s ease;
+}
+.reservation-tile-summary:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+.reservation-tile-summary::-webkit-details-marker {
+  display: none;
+}
+.reservation-tile-summary::after {
+  content: "▾";
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+.reservation-tile[open] .reservation-tile-summary::after {
+  transform: rotate(180deg);
+}
+.tile-main {
+  display: grid;
+  gap: 4px;
+}
+.tile-place-code {
+  font: 600 20px "Playfair Display", Georgia, serif;
+  color: var(--ink);
+}
+.tile-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+.tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.reservation-tile-body {
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--line);
+}
+.reservation-tile-body [role="status"] {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(37, 67, 50, 0.08);
+  color: var(--ink);
+  font-size: 14px;
+}
+.tile-details-list {
+  margin: 0 0 14px;
+  display: grid;
+  gap: 8px;
+}
+.tile-details-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.tile-details-list > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.tile-details-list dt {
+  color: var(--muted);
+  font-weight: 400;
+}
+.tile-details-list dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
+  word-break: break-word;
+}
+.tile-benefits {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.reservation-tile .reservation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.reservation-tile .reservation-actions a {
+  color: var(--green);
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+.reservation-tile .reservation-actions .quiet-button {
+  min-height: 38px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+}
+.reservation-tile .reservation-actions .quiet-button:hover {
+  border-color: var(--ink);
+}
+
 /* Poniżej 600px map.css zawija rząd do 4 kolumn, więc numer kolumny działa tylko tutaj. */
 @media (min-width: 601px) {
   #seats .place {
@@ -268,5 +501,17 @@
 @media (max-width: 1000px) {
   .reservation-layout {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .step-review #review {
+    padding: 14px 16px;
+  }
+  .step-review #review > div {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .step-review #review > div dd {
+    text-align: left;
   }
 }
