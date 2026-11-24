@@ -13,6 +13,7 @@
   const seats = document.getElementById("seats");
   const beneficiary = document.getElementById("beneficiary");
   const loginLink = document.getElementById("login-link");
+  const mapLink = document.getElementById("map-link");
   const labels = {
     adult: "Dla dorosłych",
     child: "Dla dzieci",
@@ -275,6 +276,14 @@
     if (step > 1) query.set("step", step);
     const url = location.pathname + (query.size ? "?" + query : "");
     history[push ? "pushState" : "replaceState"]({}, "", url);
+    // Mapa używa tych samych nazw filtrów: level, sector, kind, capacity.
+    const mapQuery = new URLSearchParams();
+    ["level", "sector", "kind", "capacity"].forEach((name) => {
+      if (c[name]) mapQuery.set(name, c[name]);
+    });
+    if (!c.package || c.package === "basic") mapQuery.delete("sector");
+    if (c.place) mapQuery.set("miejsce", c.place);
+    mapLink.href = mapLink.pathname + (mapQuery.size ? "?" + mapQuery : "");
     if (loginLink) {
       const loginQuery = new URLSearchParams(query);
       loginQuery.set("step", 4);
