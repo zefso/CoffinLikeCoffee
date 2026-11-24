@@ -1,3 +1,30 @@
+/* Strony rezerwacji mają więcej linków w nagłówku, więc może się on zawijać. */
+.site-header {
+  height: auto;
+  min-height: 90px;
+  gap: 12px;
+}
+.header-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px 20px;
+}
+.header-links a,
+.header-links button {
+  color: #254332;
+  text-underline-offset: 4px;
+}
+.header-links button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
 .reservation-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
