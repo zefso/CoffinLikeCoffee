@@ -261,6 +261,26 @@
     }
     return rows;
   }
+  // PESEL nie trafia na ekran w całości; widać tylko dwie ostatnie cyfry.
+  const masked = (pesel) => (pesel ? "•".repeat(9) + pesel.trim().slice(-2) : "—");
+  const value = (name) => fields[name].value.trim();
+  function personRows() {
+    if (!fields.first_name) return [];
+    const rows = [
+      ["Rezerwujący", `${value("first_name")} ${value("last_name")}`],
+      ["Email", value("email")],
+      ["Telefon", value("phone")],
+      ["PESEL", masked(value("pesel"))],
+    ];
+    if (fields.for_self.checked) rows.push(["Dla kogo", "Rezerwuję dla siebie"]);
+    else {
+      rows.push(
+        ["Dla kogo", `${value("beneficiary_first_name")} ${value("beneficiary_last_name")}`],
+        ["PESEL osoby", masked(value("beneficiary_pesel"))]
+      );
+    }
+    return rows;
+  }
   function drawList(list, rows) {
     list.replaceChildren();
     rows.forEach(([key, value]) => list.append(el("dt", key), el("dd", value)));
@@ -299,7 +319,7 @@
     const rows = summaryRows(c);
     const total = price(c);
     drawList(document.getElementById("summary"), rows);
-    drawList(document.getElementById("review"), rows);
+    drawList(document.getElementById("review"), [...rows, ...personRows()]);
     document.getElementById("total").textContent = total ? money(total) : "—";
     steps.forEach((section) => {
       section.hidden = Number(section.dataset.step) !== step;
