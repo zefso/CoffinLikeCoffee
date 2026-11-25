@@ -32,9 +32,9 @@
   let places = [];
   let step = 1;
   let mapPlace = "";
+  let mapState = new URLSearchParams();
 
-  const money = (amount) =>
-    String(amount).replace(/\B(?=(\d{3})+$)/g, " ") + " zł";
+  const money = (amount) => String(amount).replace(/\B(?=(\d{3})+$)/g, " ") + " zł";
   const el = (tag, text) => {
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
@@ -97,9 +97,7 @@
     });
     c.capacity = fields.capacity.value;
     form.querySelectorAll('input[name="level"]').forEach((input) => {
-      const count = places.filter((p) =>
-        fits(p, { ...c, level: input.value })
-      ).length;
+      const count = places.filter((p) => fits(p, { ...c, level: input.value })).length;
       input.disabled = !count;
       if (input.disabled) input.checked = false;
       root.querySelector(`[data-count="${input.value}"]`).textContent = c.capacity
@@ -129,8 +127,7 @@
 
     const allSeats = places.filter((p) => String(p.level) === c.level);
     const open = pool(c);
-    document.getElementById("sector-field").hidden =
-      !c.package || c.package === "basic";
+    document.getElementById("sector-field").hidden = !c.package || c.package === "basic";
     fillSelect(
       fields.sector,
       [...new Set(allSeats.map((p) => p.sector))],
@@ -161,23 +158,25 @@
     c.row = fields.row.value;
     drawSeats(c, allSeats, open);
     if (fields.for_self) {
-  fields.for_self.disabled = c.kind === "child";
-  if (fields.for_self.disabled) fields.for_self.checked = false;
-  beneficiary.disabled = fields.for_self.checked;
-  beneficiary.hidden = fields.for_self.checked;
-  if (fields.for_self.checked) {
-    ["beneficiary_first_name", "beneficiary_last_name", "beneficiary_pesel"].forEach((name) => {
-      const err = document.getElementById(`error-${name}`);
-      if (err) err.textContent = "";
-      if (fields[name]) fields[name].removeAttribute("aria-invalid");
-    });
-  }
-}
+      fields.for_self.disabled = c.kind === "child";
+      if (fields.for_self.disabled) fields.for_self.checked = false;
+      beneficiary.disabled = fields.for_self.checked;
+      beneficiary.hidden = fields.for_self.checked;
+      if (fields.for_self.checked) {
+        ["beneficiary_first_name", "beneficiary_last_name", "beneficiary_pesel"].forEach(
+          (name) => {
+            const err = document.getElementById(`error-${name}`);
+            if (err) err.textContent = "";
+            if (fields[name]) fields[name].removeAttribute("aria-invalid");
+          }
+        );
+      }
+    }
   }
   function seatLabel(p) {
     const reinforced = p.ground === "reinforced";
     return (
-      `Rząd ${p.row}, miejsce ${p.number}, ${statusNames[p.status]}` +
+      `Piętro ${p.floor}, rząd ${p.row}, miejsce ${p.number}, ${statusNames[p.status]}` +
       (reinforced ? `, grunt wzmocniony +${money(pricing.reinforced)}` : "")
     );
   }
@@ -222,24 +221,38 @@
       : `Wolne miejsca, z których przydzielimy Twoje: ${candidates.size}. Dokładne miejsce poznasz po rezerwacji.`;
     document.getElementById("seat-legend-exact").hidden = !exact;
     document.getElementById("seat-legend-pool").hidden = exact;
-    [...new Set(shown.map((p) => p.sector))].forEach((name) => {
-      const block = el("div");
-      block.className = "sector";
-      block.append(el("h3", `Sektor ${name}`));
-      const inSector = shown.filter((p) => p.sector === name);
-      [...new Set(inSector.map((p) => p.row))].forEach((number) => {
-        const line = el("div");
-        line.className = "place-row";
-        const label = el("span", `R${number}`);
-        label.className = "row-label";
-        line.append(label);
-        inSector
-          .filter((p) => p.row === number)
-          .forEach((p) => line.append(drawSeat(p, c, candidates)));
-        block.append(line);
-      });
-      seats.append(block);
+    const groups = new Map();
+    shown.forEach((place) => {
+      const key = `${place.floor}:${place.sector}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(place);
     });
+    // Wybrane piętro jest pierwsze, aby miejsce z mapy było od razu widoczne.
+    const selectedFloor = seat()?.floor;
+    [...groups.values()]
+      .sort(
+        (a, b) =>
+          Number(b[0].floor === selectedFloor) - Number(a[0].floor === selectedFloor)
+      )
+      .forEach((inSector) => {
+        const block = el("div");
+        block.className = "sector";
+        block.append(
+          el("h3", `Piętro ${inSector[0].floor} · Sektor ${inSector[0].sector}`)
+        );
+        [...new Set(inSector.map((p) => p.row))].forEach((number) => {
+          const line = el("div");
+          line.className = "place-row";
+          const label = el("span", `R${number}`);
+          label.className = "row-label";
+          line.append(label);
+          inSector
+            .filter((p) => p.row === number)
+            .forEach((p) => line.append(drawSeat(p, c, candidates)));
+          block.append(line);
+        });
+        seats.append(block);
+      });
   }
   function reinforcedNow(c) {
     return c.package === "place" ? seat()?.ground === "reinforced" : c.reinforced;
@@ -262,9 +275,12 @@
     if (c.package) rows.push(["Pakiet", pricing.packageNames[c.package]]);
     const picked = c.package === "place" ? seat() : null;
     if (picked) {
-      rows.push([String(picked.id) === mapPlace ? "Miejsce z mapy" : "Miejsce", picked.code]);
-    }
-    else if (c.package === "sector" || c.package === "row") {
+      rows.push(["Piętro", String(picked.floor)]);
+      rows.push([
+        String(picked.id) === mapPlace ? "Miejsce z mapy" : "Miejsce",
+        picked.code,
+      ]);
+    } else if (c.package === "sector" || c.package === "row") {
       if (c.sector) rows.push(["Sektor", c.sector]);
       if (c.package === "row" && c.row) rows.push(["Rząd", c.row]);
     }
@@ -287,7 +303,10 @@
     if (fields.for_self.checked) rows.push(["Dla kogo", "Rezerwuję dla siebie"]);
     else {
       rows.push(
-        ["Dla kogo", `${value("beneficiary_first_name")} ${value("beneficiary_last_name")}`],
+        [
+          "Dla kogo",
+          `${value("beneficiary_first_name")} ${value("beneficiary_last_name")}`,
+        ],
         ["PESEL osoby", masked(value("beneficiary_pesel"))]
       );
     }
@@ -306,15 +325,24 @@
     if (c.reinforced) query.set("reinforced", "1");
     if (c.place) query.set("miejsce", c.place);
     if (step > 1) query.set("step", step);
+    if (mapState.size) query.set("mapa", mapState.toString());
     const url = location.pathname + (query.size ? "?" + query : "");
     history[push ? "pushState" : "replaceState"]({}, "", url);
-    // Mapa używa tych samych nazw filtrów: level, sector, kind, capacity.
-    const mapQuery = new URLSearchParams();
-    ["level", "sector", "kind", "capacity"].forEach((name) => {
-      if (c[name]) mapQuery.set(name, c[name]);
-    });
-    if (!c.package || c.package === "basic") mapQuery.delete("sector");
-    if (c.place) mapQuery.set("miejsce", c.place);
+    // Zachowujemy cały widok wejściowy, dopóki klient nie zmieni miejsca/pakietu.
+    const samePlace =
+      c.package === "place" && c.place && c.place === mapState.get("miejsce");
+    const mapQuery = samePlace ? new URLSearchParams(mapState) : new URLSearchParams();
+    if (!samePlace) {
+      ["level", "sector", "kind", "capacity"].forEach((name) => {
+        if (c[name]) mapQuery.set(name, c[name]);
+      });
+      if (!c.package || c.package === "basic") mapQuery.delete("sector");
+      if (c.package === "place" && c.place) {
+        mapQuery.set("miejsce", c.place);
+        mapQuery.set("floor", seat().floor);
+      }
+      if (c.package === "row" && c.row) mapQuery.set("row", c.row);
+    }
     mapLink.href = mapLink.pathname + (mapQuery.size ? "?" + mapQuery : "");
     if (loginLink) {
       const loginQuery = new URLSearchParams(query);
@@ -388,7 +416,8 @@
       if (!input.willValidate || input.validity.valid) return;
       if (input.validity.valueMissing) errors[input.name] = "To pole jest wymagane.";
       else if (input.type === "email") errors[input.name] = "Podaj poprawny adres email.";
-      else if (input.name.endsWith("pesel")) errors[input.name] = "PESEL musi mieć 11 cyfr.";
+      else if (input.name.endsWith("pesel"))
+        errors[input.name] = "PESEL musi mieć 11 cyfr.";
       else errors[input.name] = "Sprawdź wartość tego pola.";
     });
     return errors;
@@ -453,7 +482,9 @@
         alertMessage(data.error || "Nie udało się zapisać rezerwacji. Spróbuj ponownie.");
       }
     } catch {
-      alertMessage("Brak połączenia. Twoje dane pozostały w formularzu, spróbuj ponownie.");
+      alertMessage(
+        "Brak połączenia. Twoje dane pozostały w formularzu, spróbuj ponownie."
+      );
     } finally {
       submit.disabled = false;
     }
@@ -465,6 +496,22 @@
   }
   function restore() {
     const query = new URLSearchParams(location.search);
+    const incomingMap = new URLSearchParams(query.get("mapa") || "");
+    mapState = new URLSearchParams();
+    [
+      "floor",
+      "level",
+      "sector",
+      "row",
+      "kind",
+      "capacity",
+      "ground",
+      "status",
+      "widok",
+      "miejsce",
+    ].forEach((name) => {
+      if (incomingMap.has(name)) mapState.set(name, incomingMap.get(name));
+    });
     ["kind", "capacity", "level", "package"].forEach((name) =>
       setRadio(name, query.get(name) || "")
     );
@@ -472,7 +519,7 @@
     fields.place.value = query.get("miejsce") || "";
     const picked = seat();
     const fromMap = picked && !query.has("kind");
-    mapPlace = fromMap ? String(picked.id) : "";
+    mapPlace = fromMap ? String(picked.id) : mapState.get("miejsce") || "";
     if (fields.place.value && (!picked || picked.status !== "available")) {
       fields.place.value = "";
       mapPlace = "";
@@ -489,7 +536,9 @@
     refreshChoices();
     fields.row.value = query.get("row") || "";
     // Krok z URL obowiązuje tylko, gdy poprzednie kroki są uzupełnione.
-    const wanted = fromMap ? 3 : Math.min(Number(query.get("step")) || 1, loginLink ? 4 : 5);
+    const wanted = fromMap
+      ? 3
+      : Math.min(Number(query.get("step")) || 1, loginLink ? 4 : 5);
     step = 1;
     while (step < wanted && !stepProblem()) step += 1;
     render();

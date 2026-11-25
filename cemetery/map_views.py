@@ -1,17 +1,18 @@
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
-from django.urls import NoReverseMatch, reverse
+from django.urls import reverse
 from django.views.decorators.http import require_GET
 from .models import Place
 
 LEVELS = {1: "Ogród Pamięci", 2: "Taras Ciszy", 3: "Galeria Wspomnień"}
-FILTERS = ("level", "sector", "row", "kind", "capacity", "ground", "status")
+FILTERS = ("floor", "level", "sector", "row", "kind", "capacity", "ground", "status")
 
 
 def serialize(place):
     return {
         "id": place.pk,
         "code": place.code,
+        "floor": place.floor,
         "level": place.level,
         "level_name": LEVELS.get(place.level, str(place.level)),
         "sector": place.sector,
@@ -26,12 +27,11 @@ def serialize(place):
 
 @require_GET
 def cemetery_map(request):
-    # Viktor can expose this route name when the reservation module is ready.
-    try:
-        booking_url = reverse("reservation_create")
-    except NoReverseMatch:
-        booking_url = ""
-    return render(request, "cemetery/map.html", {"booking_url": booking_url})
+    return render(
+        request,
+        "cemetery/map.html",
+        {"booking_url": reverse("reservation_create"), "floors": Place.Floor.choices},
+    )
 
 
 @require_GET
@@ -41,7 +41,11 @@ def places(request):
         value = request.GET.get(field, "")
         if not value:
             continue
-        if field in ("level", "row"):
+        if field == "floor":
+            if value not in {str(floor) for floor in Place.Floor.values}:
+                return JsonResponse({"error": "Nieprawidłowy filtr: floor"}, status=400)
+            value = int(value)
+        elif field in ("level", "row"):
             if (
                 not value.isascii()
                 or not value.isdigit()

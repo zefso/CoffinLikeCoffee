@@ -20,13 +20,13 @@ from .reservations import (
 class MapTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        call_command("seed_places", verbosity=0)
+        call_command("seed_places", floors=[0], verbosity=0)
 
     def test_seed_is_repeatable_and_preserves_status(self):
         p = Place.objects.first()
         p.status = "reserved"
         p.save()
-        call_command("seed_places", verbosity=0)
+        call_command("seed_places", floors=[0], verbosity=0)
         p.refresh_from_db()
         self.assertEqual(Place.objects.count(), 268)
         self.assertEqual(p.status, "reserved")
@@ -49,6 +49,7 @@ class MapTests(TestCase):
                 {
                     "id",
                     "code",
+                    "floor",
                     "level",
                     "level_name",
                     "sector",
@@ -68,6 +69,9 @@ class MapTests(TestCase):
             {"row": "0"},
             {"level": "9" * 100},
             {"status": "bad"},
+            {"floor": "-5"},
+            {"floor": "1"},
+            {"floor": "-1.0"},
         ]:
             self.assertEqual(self.client.get("/api/miejsca/", query).status_code, 400)
         self.assertEqual(
@@ -78,8 +82,8 @@ class MapTests(TestCase):
 
     def test_pages_and_detail(self):
         self.assertContains(self.client.get("/"), "/mapa/")
-        self.assertContains(self.client.get("/mapa/"), '<option value="1">')
-        self.assertContains(self.client.get("/mapa/"), "<option>A</option>")
+        self.assertContains(self.client.get("/mapa/"), 'select name="level"')
+        self.assertContains(self.client.get("/mapa/"), 'select name="sector"')
         p = Place.objects.first()
         self.assertEqual(
             self.client.get(f"/api/miejsca/{p.pk}/").json()["code"], p.code
@@ -89,6 +93,74 @@ class MapTests(TestCase):
         self.assertContains(
             self.client.get("/mapa/"), 'data-booking="/rezerwacje/nowa/"'
         )
+
+    def test_floors_have_distinct_ids_and_preserve_surface_places(self):
+        surface = Place.objects.first()
+        original = (surface.pk, surface.code, surface.status)
+        call_command("seed_places", verbosity=0)
+        call_command("seed_places", verbosity=0)
+        self.assertEqual(Place.objects.count(), 1340)
+        surface.refresh_from_db()
+        self.assertEqual((surface.pk, surface.code, surface.status), original)
+        underground = Place.objects.get(
+            floor=-4,
+            level=surface.level,
+            sector=surface.sector,
+            row=surface.row,
+            number=surface.number,
+        )
+        self.assertNotEqual(surface.pk, underground.pk)
+        self.assertEqual(underground.code, f"P-4/{surface.code}")
+        response = self.client.get("/api/miejsca/", {"floor": -4, "level": 1})
+        self.assertEqual(len(response.json()["places"]), 128)
+        self.assertTrue(all(p["floor"] == -4 for p in response.json()["places"]))
+        self.assertEqual(
+            self.client.get(f"/api/miejsca/{underground.pk}/").json()["floor"], -4
+        )
+
+    def test_location_is_unique_within_floor(self):
+        place = Place.objects.first()
+        place.pk = None
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            place.save()
+        place.floor = -1
+        place.save()
+        place.pk = None
+        place.floor = -5
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            place.save()
+
+    def test_home_counts_and_links_follow_database(self):
+        response = self.client.get("/")
+        self.assertEqual(response.context["stats"][1]["value"], 268)
+        Place.objects.filter(level=3).delete()
+        response = self.client.get("/")
+        self.assertEqual(response.context["stats"][1]["value"], 212)
+        self.assertEqual(response.context["levels"][2]["spots"], "Liczba miejsc: 0")
+        for level in (1, 2, 3):
+            self.assertContains(response, f"/mapa/?level={level}")
+        self.assertContains(response, "/api/miejsca/?floor=0")
+
+    def test_api_supports_sectors_rows_and_numbers_outside_demo(self):
+        place = Place.objects.first()
+        place.pk = None
+        place.sector, place.row, place.number = "Z9", 12, 16
+        place.save()
+        response = self.client.get(
+            "/api/miejsca/", {"floor": 0, "sector": "Z9", "row": 12}
+        )
+        self.assertEqual([p["id"] for p in response.json()["places"]], [place.pk])
+        self.assertEqual(response.json()["places"][0]["number"], 16)
+
+    def test_map_navigation_follows_session(self):
+        response = self.client.get("/mapa/")
+        self.assertContains(response, 'href="/logowanie/"')
+        self.assertNotContains(response, 'action="/wylogowanie/"')
+        user = get_user_model().objects.create_user("mapa-test")
+        self.client.force_login(user)
+        response = self.client.get("/mapa/")
+        self.assertContains(response, 'href="/moje-rezerwacje/"')
+        self.assertContains(response, 'action="/wylogowanie/"')
 
 
 def make_pesel(year, month, day):
@@ -130,7 +202,7 @@ class PricingAndPeselTests(TestCase):
 class ReservationTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        call_command("seed_places", verbosity=0)
+        call_command("seed_places", floors=[0], verbosity=0)
         cls.user = get_user_model().objects.create_user("klient", password="x")
         cls.other = get_user_model().objects.create_user("inny", password="x")
 
@@ -172,6 +244,29 @@ class ReservationTests(TestCase):
             capacity=place.capacity,
             **changes,
         )
+
+    def test_place_from_underground_map_keeps_id_floor_and_price(self):
+        surface = self.free(kind="adult", capacity="single", level=1)
+        place = Place.objects.get(pk=surface.pk)
+        place.pk = None
+        place.floor = -4
+        place.save()
+        response = self.seat(place)
+        self.assertEqual(response.status_code, 201)
+        reservation = Reservation.objects.get(place=place)
+        self.assertEqual(reservation.place.floor, -4)
+        self.assertEqual(
+            reservation.price,
+            calculate_price(
+                place.level,
+                "place",
+                place.kind,
+                place.capacity,
+                place.ground == "reinforced",
+            ),
+        )
+        surface.refresh_from_db()
+        self.assertEqual(surface.status, "available")
 
     def direct(self, place, user=None):
         return Reservation.objects.create(

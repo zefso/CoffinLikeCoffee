@@ -3,43 +3,52 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group, User
+from django.db.models import Count
 from django.shortcuts import redirect, render
 
+from .models import Place
+
+
 def home(request):
+    counts = dict(Place.objects.values_list("level").annotate(total=Count("pk")))
     context = {
         "levels": [
             {
+                "id": 1,
                 "name": "Ogród Pamięci",
-                "level": "Poziom 01",
+                "level": "Strefa 01",
                 "description": "Cichy, pełen zieleni ogród dla tych, których wspominamy z najcieplejszym uśmiechem.",
-                "spots": "128 miejsc",
+                "spots": f"Liczba miejsc: {counts.get(1, 0)}",
                 "accent": "sage",
                 "icon": "✦",
             },
             {
+                "id": 2,
                 "name": "Taras Ciszy",
-                "level": "Poziom 02",
+                "level": "Strefa 02",
                 "description": "Przestrzeń światła i kamienia, z widokiem na spokojne alejki cmentarza.",
-                "spots": "84 miejsca",
+                "spots": f"Liczba miejsc: {counts.get(2, 0)}",
                 "accent": "lavender",
                 "icon": "◒",
             },
             {
+                "id": 3,
                 "name": "Galeria Wspomnień",
-                "level": "Poziom 03",
+                "level": "Strefa 03",
                 "description": "Kameralna galeria urn i pamiątek, zaprojektowana z myślą o rodzinnych historiach.",
-                "spots": "56 miejsc",
+                "spots": f"Liczba miejsc: {counts.get(3, 0)}",
                 "accent": "ochre",
                 "icon": "✺",
             },
         ],
         "stats": [
-            {"value": "3", "label": "poziomy ciszy"},
-            {"value": "268", "label": "miejsc pamięci"},
+            {"value": len(counts), "label": "strefy pamięci"},
+            {"value": sum(counts.values()), "label": "miejsc na wszystkich piętrach"},
             {"value": "24/7", "label": "dostęp online"},
         ],
     }
     return render(request, "cemetery/home.html", context)
+
 
 class ClientRegistrationForm(UserCreationForm):
     email = forms.EmailField(

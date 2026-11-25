@@ -27,6 +27,10 @@ Każdy właściciel odpowiada również za walidację, obsługę błędów, test
 
 ## Stan projektu i etapy
 
+**Aktualizacja 25.11.2026 — Roman, F01–F04 (lokalnie):** mapa ma płaski plan 2D z góry i scenę 3D, piętra `0…−4` z rozwijanym okrągłym przełącznikiem, odrębne otoczenie każdego piętra oraz dynamiczne sektory, rzędy i położenie miejsc. Piętro (`floor`) jest niezależne od strefy cenowej (`level`). Statystyki strony głównej pochodzą z bazy, karty otwierają właściwą strefę, a nagłówek mapy uwzględnia sesję. Sprawdzono mapę przy 375 px oraz przekazanie podziemnego miejsca do kroku 3 rezerwacji. Wymagane: `python manage.py migrate` i `python manage.py seed_places`. Szczegóły: [kontrakt i weryfikacja mapy](docs/integracja-mapy.md).
+
+**Pozostałe blokady integracji:** aktualny zestaw testów ma trzy wcześniejsze błędy związane z trasą anulowania. Obsługa anulowania wymaga również poprawy sprawdzania właściciela (`customer_id`) i statusu zwalnianego miejsca (`available`). To zadanie F07/F09; nie jest częścią zakończonej weryfikacji mapy. Panele F10/F11 pozostają do wdrożenia.
+
 **Aktualizacja 05.11.2026:**Zaimplementowano moduły F08 oraz F09: skonfigurowano uwierzytelnianie użytkowników (logowanie/wylogowanie) z wykorzystaniem widoków Django oraz dodano system ról i uprawnień (Klient, Zarządca, Administrator) wraz z dedykowanymi dekoratorami w pliku permissions.py do ochrony widoków oraz API.
 
 **Aktualizacja 03.11.2026:** zaimplementowano `/mapa/` z widokiem 3D z boku, przełącznikiem 2D, obrotem i powiększeniem, filtry w URL, szczegóły miejsc, model `Place` i API JSON. [Kontrakt integracji i przygotowanie danych](docs/integracja-mapy.md). F02–F04 są zaimplementowane; końcowy odbiór UI i połączenie z formularzem rezerwacji pozostają do weryfikacji.
@@ -51,15 +55,15 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 | ID | Funkcja i opis | Właściciel | Etap | Stan |
 |---|---|---|---|---|
-| F01 | [Strona główna i nawigacja](#f01) | @zefso | M1 | Podstawowa wersja działa |
-| F02 | [Interaktywna mapa](#f02) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
-| F03 | [Filtrowanie miejsc](#f03) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
-| F04 | [Szczegóły miejsca](#f04) | @zefso | M1 | Zaimplementowane; odbiór UI do weryfikacji |
+| F01 | [Strona główna i nawigacja](#f01) | @zefso | M1 | Gotowe lokalnie; weryfikacja 25.11 |
+| F02 | [Interaktywna mapa](#f02) | @zefso | M1 | 2D/3D i piętra gotowe lokalnie; weryfikacja 25.11 |
+| F03 | [Filtrowanie miejsc](#f03) | @zefso | M1 | Dynamiczne dane i URL; weryfikacja 25.11 |
+| F04 | [Szczegóły miejsca](#f04) | @zefso | M1 | Wybór i przejście do rezerwacji sprawdzone 25.11 |
 | F05 | [Pakiety rezerwacji](#f05) | @he4tegg | M2 | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
 | F06 | [Rezerwowanie miejsca](#f06) | @he4tegg | M2 | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
 | F07 | [Moje rezerwacje](#f07) | @he4tegg | M2 | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
-| F08 | [Logowanie i wylogowanie](#f08) | @Petruk-Volodymyr | M1 | Konfiguracja przygotowana; widoki do zrobienia |
-| F09 | [Role i uprawnienia](#f09) | @Petruk-Volodymyr | M1 | Do zrobienia |
+| F08 | [Logowanie i wylogowanie](#f08) | @Petruk-Volodymyr | M1 | Widoki istnieją; logowanie obsługuje next |
+| F09 | [Role i uprawnienia](#f09) | @Petruk-Volodymyr | M1 | Grupy i dekoratory istnieją; integracja z panelami do zrobienia |
 | F10 | [Panel zarządcy](#f10) | @Petruk-Volodymyr | M2 | Do zrobienia |
 | F11 | [Zarządzanie kontami](#f11) | @Petruk-Volodymyr | M2 | Do zrobienia |
 
@@ -68,30 +72,30 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Właściciel:** Roman Horbach (@zefso).
 
-**Co robi użytkownik:** poznaje projekt, przechodzi między sekcjami i rozwija menu na telefonie.
+**Co robi użytkownik:** poznaje projekt, przechodzi między sekcjami, rozwija menu na telefonie i przegląda mini-mapę powierzchni: przybliża kółkiem, przesuwa oraz otwiera szczegóły miejsca na pełnej mapie.
 
 **Widok:** `/`.
 
-**Dane:** treści szablonu i przykładowe poziomy oraz statystyki z `cemetery/views.py`.
+**Dane:** opisy stref z `cemetery/views.py`; liczby miejsc i stref liczone w SQLite z `Place`. Karty sumują miejsca na wszystkich piętrach. Mini-mapa pobiera powierzchnię z `GET /api/miejsca/?floor=0`; pełna mapa udostępnia piętra podziemne.
 
 **Najtrudniejsze:** czytelny układ na telefonie i obsługa menu klawiaturą.
 
-**Gotowe, gdy:** sekcje i odnośniki działają, menu aktualizuje `aria-expanded`, a strona nie przewija się poziomo na małym ekranie.
+**Gotowe, gdy:** sekcje i odnośniki działają, karty kierują do `?level=1/2/3`, menu aktualizuje `aria-expanded`, mini-mapa reaguje na zoom i przesuwanie, a strona nie przewija się poziomo przy 375 px. Liczniki odzwierciedlają bazę także po usunięciu lub dodaniu miejsc.
 
 <a id="f02"></a>
 ### F02. Interaktywna mapa cmentarza
 
 **Właściciel:** Roman Horbach (@zefso).
 
-**Co robi użytkownik:** wybiera poziom, sektor i rząd oraz sprawdza wolne, zarezerwowane i zajęte miejsca.
+**Co robi użytkownik:** przełącza płaski plan 2D z góry i scenę 3D, wybiera piętro, strefę i sektor oraz sprawdza wolne, zarezerwowane i zajęte miejsca. Okrągły przycisk w prawym dolnym rogu rozwija piętra 0…−4; po wyborze lista się zamyka.
 
-**Widok:** planowane `/mapa/`.
+**Widok:** działające `/mapa/`.
 
-**Dane:** własne modele poziomu, sektora, rzędu i miejsca w SQLite; planowane `GET /api/miejsca/`.
+**Dane:** wspólny model `Place` w SQLite i działające `GET /api/miejsca/`. Układ obu widoków jest wyliczany z rzędów i numerów otrzymanych z API; filtrowanie nie zmienia położenia pozostałych miejsc.
 
 **Najtrudniejsze:** pobieranie danych przez `fetch`, odwzorowanie układu i odświeżenie dostępności.
 
-**Gotowe, gdy:** JavaScript renderuje miejsca z JSON, pokazuje legendę także tekstowo, obsługuje ładowanie, pusty wynik i błąd z ponowieniem; wybór miejsca otwiera jego szczegóły.
+**Gotowe, gdy:** oba widoki pokazują te same miejsca i zaznaczenie; 2D nie ma perspektywy ani pionowych ścian. Piętra zmieniają dane i otoczenie: trawa, ziemia, kamień, łupek, lawa. Mapa obsługuje ładowanie, pusty wynik i błąd z ponowieniem. Klawiatura pozwala sterować kamerą, przełączać piętro i wybierać miejsca z listy. Escape zamyka przełącznik, a ograniczenie animacji systemowych jest respektowane. Układ działa przy 375 px.
 
 <a id="f03"></a>
 ### F03. Filtrowanie miejsc
@@ -102,11 +106,11 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Widok:** panel filtrów na `/mapa/`.
 
-**Dane:** cechy miejsc z własnego API; aktywne filtry w parametrach URL.
+**Dane:** cechy miejsc z własnego API; strefy, sektory i rzędy są tworzone z danych wybranego piętra, bez list A–D/1–4 w HTML. Aktywne filtry, piętro, widok i wybrane miejsce są w URL.
 
 **Najtrudniejsze:** łączenie filtrów i zachowanie ich po odświeżeniu.
 
-**Gotowe, gdy:** wyniki spełniają wszystkie wybrane warunki, URL przywraca filtry, a brak wyników pokazuje komunikat i możliwość resetu.
+**Gotowe, gdy:** wyniki spełniają wszystkie wybrane warunki, odświeżenie i Wstecz/Dalej przywracają stan, a brak wyników pokazuje komunikat i możliwość resetu. Nowe sektory, rzędy oraz numery większe od 8 działają bez zmian w kodzie mapy.
 
 <a id="f04"></a>
 ### F04. Szczegóły miejsca
@@ -121,7 +125,7 @@ Opisy znajdują się w README zgodnie z wariantem dopuszczonym przez prowadzące
 
 **Najtrudniejsze:** synchronizacja zaznaczenia na mapie i aktualnego statusu.
 
-**Gotowe, gdy:** panel pokazuje wybrane miejsce, nie udostępnia danych osobowych rezerwującego i blokuje rozpoczęcie rezerwacji miejsca zajętego lub zarezerwowanego.
+**Gotowe, gdy:** panel pokazuje wybrane miejsce i piętro, nie udostępnia danych osobowych rezerwującego i blokuje rozpoczęcie rezerwacji miejsca zajętego lub zarezerwowanego. Link przekazuje ID do formularza: krok 3, pakiet „Wybrane miejsce”, to samo zaznaczone miejsce i jego piętro w podsumowaniu. Powrót na mapę zachowuje wybór, również dla pięter podziemnych.
 
 <a id="f05"></a>
 ### F05. Wybór pakietu rezerwacji
@@ -183,7 +187,7 @@ Projekt obejmuje demonstracyjny wybór pakietu bez rzeczywistej płatności.
 
 **Co robi użytkownik:** loguje się istniejącym kontem, otrzymuje komunikat przy błędnych danych i wylogowuje się.
 
-**Widok:** planowane `/logowanie/` oraz akcja POST `/wylogowanie/`.
+**Widok:** `/logowanie/` oraz akcja POST `/wylogowanie/`.
 
 **Dane:** Django auth, hasła haszowane przez Django i sesje serwerowe; konta tworzy administrator.
 
@@ -242,7 +246,7 @@ Projekt obejmuje demonstracyjny wybór pakietu bez rzeczywistej płatności.
 
 **Rezerwacje:** `/rezerwacje/nowa/`, `/moje-rezerwacje/` i `POST /api/rezerwacje/` działają. Kroki 1–3 są publiczne, a wybór klienta jest w URL, więc przetrwa logowanie; dane osobowe nie trafiają do URL. Walidacja jest w `cemetery/forms.py`, logika zapisu i cennik w `cemetery/reservations.py`, a przed podwójną rezerwacją chronią warunkowy `UPDATE` i częściowy unikalny indeks. `Reservation` przechowuje cenę z chwili rezerwacji; PESEL nie jest zapisywany.
 
-**Planowane widoki:** `/logowanie/`, `/zarzadca/rezerwacje/`, `/administracja/uzytkownicy/`. Akcja `/wylogowanie/` przyjmuje POST. Żaden z tych adresów nie jest jeszcze zaimplementowany.
+**Dostęp:** `/logowanie/`, `/rejestracja/` i POST `/wylogowanie/` istnieją. Widoki `/zarzadca/rezerwacje/` i `/administracja/uzytkownicy/` pozostają planem.
 
 **Planowane dane i stan:** SQLite przechowuje miejsca, rezerwacje i konta; pakiety i cennik są stałymi w kodzie. Serwer jest źródłem prawdy dla dostępności i uprawnień. JS obsługuje mapę, formularz, ładowanie i błędy; `fetch` pobiera JSON oraz wysyła rezerwacje. Filtry są w URL, sesja w mechanizmie Django, a hasła i dane rezerwacji nie trafiają do localStorage. F02 i F06 wymagają wspólnego modelu miejsca; F06 oraz F10 używają tej samej logiki zapisu.
 
@@ -306,7 +310,7 @@ python manage.py runserver 8080
 
 Otwórz http://127.0.0.1:8080/.
 
-Po pobraniu zmian uruchom `python manage.py migrate`, aby utworzyć tabelę rezerwacji. Testy: `python manage.py test`. Dopóki nie ma `/logowanie/` (F08), konfigurator działa do kroku 4, a zapis rezerwacji w przeglądarce wymaga sesji zalogowanego użytkownika.
+Po pobraniu zmian uruchom `python manage.py migrate` oraz `python manage.py seed_places`. Migracja 0004 przypisuje istniejące miejsca do piętra 0 bez zmiany ID i rezerwacji. Seeder dodaje brakujące miejsca na piętrach 0…−4 (łącznie 1340 w pustej bazie); zachowuje istniejące dane. Samą powierzchnię można uzupełnić przez `python manage.py seed_places --floors 0`. Testy: `python manage.py test`, geometria mapy: `node --test tests/map-layout.test.cjs`. Zapis rezerwacji wymaga zalogowania.
 
 ### Zmienne środowiskowe
 

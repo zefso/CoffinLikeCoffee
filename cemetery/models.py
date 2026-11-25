@@ -4,11 +4,20 @@ from django.db.models import Q
 
 
 class Place(models.Model):
+    class Floor(models.IntegerChoices):
+        SURFACE = 0, "Powierzchnia"
+        SOIL = -1, "Ziemia"
+        STONE = -2, "Kamień"
+        SLATE = -3, "Łupek"
+        LAVA = -4, "Lawa"
+
     class Status(models.TextChoices):
         AVAILABLE = "available", "Wolne"
         RESERVED = "reserved", "Zarezerwowane"
         OCCUPIED = "occupied", "Zajęte"
 
+    # Piętro fizyczne jest niezależne od strefy cenowej (level).
+    floor = models.SmallIntegerField(choices=Floor.choices, default=Floor.SURFACE)
     level = models.PositiveSmallIntegerField()
     sector = models.CharField(max_length=8)
     row = models.PositiveSmallIntegerField()
@@ -33,17 +42,21 @@ class Place(models.Model):
     )
 
     class Meta:
-        ordering = ["level", "sector", "row", "number"]
+        ordering = ["-floor", "level", "sector", "row", "number"]
         constraints = [
             models.UniqueConstraint(
-                fields=["level", "sector", "row", "number"],
+                fields=["floor", "level", "sector", "row", "number"],
                 name="unique_place_location",
-            )
+            ),
+            models.CheckConstraint(
+                condition=Q(floor__gte=-4, floor__lte=0), name="valid_place_floor"
+            ),
         ]
 
     @property
     def code(self):
-        return f"{self.level}-{self.sector}-{self.row:02}-{self.number:02}"
+        location = f"{self.level}-{self.sector}-{self.row:02}-{self.number:02}"
+        return location if self.floor == 0 else f"P{self.floor}/{location}"
 
     def __str__(self):
         return self.code

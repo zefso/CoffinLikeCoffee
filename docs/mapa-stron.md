@@ -1,9 +1,9 @@
 # Mapa stron i podział pracy
 
-Stan sprawdzony w kodzie: **04.11.2026**. Istnieją adresy `/`, `/mapa/`, `/rezerwacje/nowa/`, `/moje-rezerwacje/` oraz API miejsc i rezerwacji. [Integracja z rezerwacjami](integracja-mapy.md).
-Pozostałe adresy to plan, a nie działające linki. Podział odpowiada funkcjom F01–F11 w [README](../README.md#funkcjonalności).
+Stan lokalnej implementacji: **25.11.2026**. Istnieją adresy `/`, `/mapa/`, `/rezerwacje/nowa/`, `/moje-rezerwacje/`, `/logowanie/`, `/rejestracja/`, POST `/wylogowanie/` oraz API miejsc i rezerwacji. [Integracja z rezerwacjami i wyniki sprawdzenia mapy](integracja-mapy.md).
+Panele pracowników nadal są planem. Podział odpowiada F01–F11 w [README](../README.md#funkcjonalności). Zmiany Romana z 25.11 są lokalne; oznaczenie gotowości nie oznacza zamknięcia Issue #4 ani wdrożenia całego projektu.
 
-**Legenda:** GOTOWA BAZA = strona istnieje, wymaga końcowej weryfikacji; DO ZROBIENIA = brak strony. Kolory są dodatkowym oznaczeniem, status podano również tekstowo.
+**Legenda:** GOTOWE LOKALNIE = zakres sprawdzony; DO POPRAWY = istnieje, ale ma blokady; DO ZROBIENIA = brak strony. Statusy podano również tekstowo.
 
 ## Schemat
 
@@ -12,23 +12,23 @@ Schemat Mermaid można oglądać bezpośrednio na GitHubie. Strzałki pokazują 
 ```mermaid
 flowchart TD
     subgraph roman["Roman Horbach · @zefso"]
-        home["P01 · Strona główna /<br/>GOTOWA BAZA"]
-        map["P02 · Mapa /mapa/<br/>IMPLEMENTACJA GOTOWA · ODBIÓR UI"]
-        filters["Filtry + szczegóły miejsca<br/>Elementy mapy · ODBIÓR UI"]
+        home["P01 · Strona główna /<br/>GOTOWE LOKALNIE"]
+        map["P02 · Mapa /mapa/<br/>2D / 3D · PIĘTRA 0…−4<br/>GOTOWE LOKALNIE"]
+        filters["Filtry z danych + szczegóły<br/>GOTOWE LOKALNIE"]
     end
     subgraph viktor["Viktor Levchenko · @he4tegg"]
         booking["P03 · Nowa rezerwacja<br/>/rezerwacje/nowa/<br/>POPRAWKI #4 · SPRAWDZONE Z LOGOWANIEM"]
-        mine["P04 · Moje rezerwacje<br/>/moje-rezerwacje/<br/>POPRAWKI #4 · SPRAWDZONE Z LOGOWANIEM"]
+        mine["P04 · Moje rezerwacje<br/>/moje-rezerwacje/<br/>ANULOWANIE DO POPRAWY"]
     end
     subgraph volodymyr["Volodymyr Petruk · @Petruk-Volodymyr"]
-        login["P05 · Logowanie /logowanie/<br/>DO ZROBIENIA"]
+        login["P05 · Logowanie /logowanie/<br/>WIDOK ISTNIEJE"]
         manager["P06 · Rezerwacje zarządcy<br/>/zarzadca/rezerwacje/<br/>DO ZROBIENIA"]
         edit["P07 · Formularz zarządcy<br/>Dodawanie / edycja<br/>DO ZROBIENIA"]
         accounts["P08 · Konta i role<br/>/administracja/uzytkownicy/<br/>DO ZROBIENIA"]
     end
     home --> map
     map --- filters
-    map -->|Rezerwuj po zalogowaniu| booking
+    map -->|ID miejsca · krok 3| booking
     home --> login
     login -->|Klient| mine
     login -->|Zarządca| manager
@@ -40,8 +40,8 @@ flowchart TD
     manager -->|Podgląd dostępności| map
     classDef base fill:#dcfce7,stroke:#15803d,color:#14532d
     classDef todo fill:#fff7ed,stroke:#c2410c,color:#7c2d12
-    class home base
-    class map,filters,booking,mine,login,manager,edit,accounts todo
+    class home,map,filters,booking,login base
+    class mine,manager,edit,accounts todo
 ```
 
 ## Lista stron do odhaczania
@@ -50,11 +50,11 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 
 | Gotowe | ID | Strona i adres | Właściciel | Zakres | Obecny stan |
 |---|---|---|---|---|---|
-| ☐ | P01 | Główna `/` | Roman | F01: sekcje, nawigacja, menu mobilne | Baza działa; końcowa kontrola dostępności i responsywności |
-| ☐ | P02 | Mapa `/mapa/` | Roman | F02–F04: mapa, filtry, szczegóły | Zaimplementowano; końcowy odbiór UI i integracja rezerwacji do weryfikacji |
+| ☑ | P01 | Główna `/` | Roman | F01: sekcje, nawigacja, menu i mini-mapa | Liczniki z bazy, linki stref, 375 px; gotowe lokalnie |
+| ☑ | P02 | Mapa `/mapa/` | Roman | F02–F04: 2D/3D, piętra, filtry, szczegóły | Dane, URL, klawiatura i przekazanie miejsca do formularza sprawdzone |
 | ☐ | P03 | Nowa rezerwacja `/rezerwacje/nowa/` | Viktor | F05–F06: pakiet, formularz, wynik zapisu | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
-| ☐ | P04 | Moje rezerwacje `/moje-rezerwacje/` | Viktor | F07: lista, anulowanie i link do mapy | Poprawki z issue #4; pełna ścieżka z logowaniem sprawdzona 24.11.2026 |
-| ☐ | P05 | Logowanie `/logowanie/` | Volodymyr | F08: formularz, błędy, przekierowanie | Brak strony; konfiguracja auth i sessions przygotowana |
+| ☐ | P04 | Moje rezerwacje `/moje-rezerwacje/` | Viktor | F07: lista, anulowanie i link do mapy | Lista istnieje; sprawdzanie właściciela i zwalnianie miejsca do poprawy |
+| ☐ | P05 | Logowanie `/logowanie/` | Volodymyr | F08: formularz, błędy, przekierowanie | Widok istnieje, obsługuje next; integracja menu ról pozostaje |
 | ☐ | P06 | Panel zarządcy `/zarzadca/rezerwacje/` | Volodymyr | F10: lista, usuwanie, statusy, dostępność | Do zrobienia |
 | ☐ | P07 | Formularz `/zarzadca/rezerwacje/nowa/` i `/zarzadca/rezerwacje/<id>/edycja/` | Volodymyr | F10: dodawanie i edycja | Do zrobienia; proponowane adresy |
 | ☐ | P08 | Konta `/administracja/uzytkownicy/` | Volodymyr | F11: tworzenie, dezaktywacja, zmiana roli | Do zrobienia |
@@ -62,12 +62,16 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 ## Roman — interfejs i mapa
 
 - [x] P01: przygotować podstawową stronę główną i menu mobilne.
-- [ ] P01: sprawdzić mały ekran, klawiaturę i odnośniki do nowych stron.
+- [x] P01: sprawdzić 375 px, menu i odnośniki do nowych stron.
+- [x] P01: liczniki z bazy, karty stref z filtrami i mini-mapa powierzchni.
 - [x] P02: dodać stronę mapy i pobieranie miejsc przez `fetch`.
 - [x] P02: wybór poziomu, sektora i rzędu; legenda statusów.
 - [x] P02: połączyć filtry i zapisywać je w URL.
 - [x] P02: panel szczegółów i kontrakt przekazania identyfikatora miejsca.
-- [ ] P02: sprawdzić pełne przejście po podłączeniu formularza Viktora i odebrać UI w przeglądarce.
+- [x] P02: sprawdzić przekazanie miejsca z powierzchni i podziemia do kroku 3 formularza Viktora; to samo ID i zaznaczenie.
+- [x] P02: płaski widok z góry 2D i scena 3D; wspólne współrzędne bez ograniczenia 8 miejsc.
+- [x] P02: piętra 0…−4, rozwijany okrągły przełącznik, otoczenie, obsługa klawiatury i ograniczonych animacji.
+- [x] P02: opcje stref, sektorów i rzędów z API; nawigacja konta w nagłówku.
 - [x] P02: obsłużyć ładowanie, błąd sieci i brak wyników.
 
 ## Viktor — ścieżka rezerwacji klienta
@@ -80,13 +84,13 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 - [x] P03: automatyczny przydział oraz obsługa braku miejsc i konfliktu rezerwacji.
 - [x] P04: lista własnych rezerwacji z pakietem, lokalizacją i statusem.
 - [x] P04: pusty stan i aktualizacja listy po zapisie.
-- [x] P04: anulowanie z potwierdzeniem w `<dialog>` i link „Pokaż na mapie”.
+- [ ] P04: poprawić backend anulowania (właściciel `customer_id`, status `available`) i zgodność tras w testach; okno potwierdzenia i link do mapy już istnieją.
 - [x] P03–P04: linki „Moje rezerwacje” i „Zaloguj”/„Wyloguj” w nagłówku.
 
 ## Volodymyr — dostęp i panele pracowników
 
 - [ ] P05: formularz logowania, błędy i przekierowanie zgodne z rolą.
-- [ ] F08: wylogowanie przez POST i zakończenie sesji.
+- [x] F08: wylogowanie przez POST jest zaimplementowane.
 - [ ] F09: sprawdzanie ról na stronach i w API.
 - [ ] P06: lista rezerwacji wszystkich klientów oraz usuwanie z potwierdzeniem.
 - [ ] P06: aktualizacja dostępności i oznaczanie miejsca jako zajętego.
@@ -101,8 +105,8 @@ P01–P08 oznaczają widoki, a F01–F11 funkcje. Jedna strona może realizować
 - Tworzenie konta i zmiana roli mogą być formularzami w panelu P08.
 - Wylogowanie to przycisk wysyłający POST `/wylogowanie/`, nie osobna strona.
 - Role i uprawnienia F09 działają we wszystkich chronionych widokach i API.
-- Sekcje „Poziomy”, „Jak to działa” i „Kontakt” pozostają na stronie głównej.
-- Samodzielna rejestracja i rzeczywiste płatności nie należą do obecnego planu.
+- Sekcje „Strefy”, „Jak to działa” i „Kontakt” pozostają na stronie głównej.
+- Samodzielna rejestracja została dodana pod `/rejestracja/`. Rzeczywiste płatności pozostają poza zakresem.
 
 ## Kolejność i zależności
 

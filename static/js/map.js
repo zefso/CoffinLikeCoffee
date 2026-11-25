@@ -1,8 +1,9 @@
 (() => {
   "use strict";
+
   const root = document.querySelector("#map-main");
   const form = document.querySelector("#filters");
-  const grid = document.querySelector("#places");
+  const panel = document.querySelector("#scene-panel");
   const details = document.querySelector("#details");
   const status = document.querySelector("#result-status");
   const error = document.querySelector("#map-error");
@@ -20,209 +21,240 @@
     standard: "Standardowy",
     reinforced: "Wzmocniony",
   };
-  const marks = { available: "W", reserved: "R", occupied: "Z" };
   let controller;
   let selected = null;
-  let loaded = [];
+  let floor = 0;
+  let allPlaces = [];
   const scene = new CemeteryScene(document.querySelector("#cemetery-scene"), select);
-  function el(tag, text, className) {
+  const floors = new CemeteryFloors((value) => {
+    floor = value;
+    selected = null;
+    populateFilters(filterValues());
+    render(true);
+  });
+
+  function element(tag, text, className) {
     const node = document.createElement(tag);
     if (text) node.textContent = text;
     if (className) node.className = className;
     return node;
   }
-  function restore() {
-    const params = new URLSearchParams(location.search);
-    fields.forEach((field) => {
-      field.value = params.get(field.name) || "";
-      if (field.selectedIndex < 0) field.value = "";
-    });
-    selected = params.get("miejsce");
+
+  function filterValues() {
+    return Object.fromEntries(fields.map((field) => [field.name, field.value]));
   }
-  function params() {
-    const value = new URLSearchParams();
-    fields.forEach((field) => {
-      if (field.value) value.set(field.name, field.value);
-    });
-    return value;
-  }
-  function writeUrl(push = false) {
-    const query = params();
-    if (selected) query.set("miejsce", selected);
-    history[push ? "pushState" : "replaceState"](
-      {},
-      "",
-      location.pathname + (query.size ? "?" + query : "")
+
+  function setOptions(name, items, title, format) {
+    const field = form.elements.namedItem(name);
+    const values = [...new Set(items.map((place) => place[name]))].sort((a, b) =>
+      String(a).localeCompare(String(b), "pl", { numeric: true })
+    );
+    field.replaceChildren(
+      new Option(title, ""),
+      ...values.map((value) => new Option(format(value), String(value)))
     );
   }
+
+  function populateFilters(wanted) {
+    // Opcje położenia pochodzą z API. Zmiana strefy ogranicza sektory i rzędy.
+    let items = allPlaces.filter((place) => place.floor === floor);
+    for (const [name, title] of [
+      ["level", "Wszystkie strefy"],
+      ["sector", "Wszystkie sektory"],
+      ["row", "Wszystkie rzędy"],
+    ]) {
+      setOptions(name, items, title, (value) =>
+        name === "level"
+          ? items.find((place) => place.level === value).level_name
+          : String(value)
+      );
+      const field = form.elements.namedItem(name);
+      field.value = wanted[name] || "";
+      if (field.selectedIndex < 0) field.value = "";
+      if (field.value)
+        items = items.filter((place) => String(place[name]) === field.value);
+    }
+    for (const field of fields.filter(
+      (field) => !["level", "sector", "row"].includes(field.name)
+    )) {
+      field.value = wanted[field.name] || "";
+      if (field.selectedIndex < 0) field.value = "";
+    }
+  }
+
+  function restore() {
+    const params = new URLSearchParams(location.search);
+    selected = params.get("miejsce");
+    const chosen = allPlaces.find((place) => String(place.id) === selected);
+    const requestedFloor = params.get("floor");
+    floor =
+      requestedFloor !== null && Object.hasOwn(CemeteryScene.themes, requestedFloor)
+        ? Number(requestedFloor)
+        : (chosen?.floor ?? 0);
+    populateFilters(Object.fromEntries(params));
+    scene.setMode(params.get("widok") === "2d" ? "2d" : "3d");
+  }
+
+  function writeUrl(push = false) {
+    const params = new URLSearchParams();
+    if (floor !== 0) params.set("floor", floor);
+    fields.forEach((field) => {
+      if (field.value) params.set(field.name, field.value);
+    });
+    if (scene.mode === "2d") params.set("widok", "2d");
+    if (selected) params.set("miejsce", selected);
+    const url = location.pathname + (params.size ? `?${params}` : "");
+    if (url !== location.pathname + location.search)
+      history[push ? "pushState" : "replaceState"]({}, "", url);
+    const bookingLink = details.querySelector(".booking-link");
+    if (bookingLink) {
+      const bookingUrl = new URL(bookingLink.href);
+      bookingUrl.searchParams.set("mapa", params.toString());
+      bookingLink.href = bookingUrl;
+    }
+  }
+
   function showDetails(place) {
     details.replaceChildren(
-      el("p", "TWÓJ WYBÓR", "eyebrow"),
-      el("h2", place ? place.code : "Szczegóły miejsca")
+      element("p", "TWÓJ WYBÓR", "eyebrow"),
+      element("h2", place ? place.code : "Szczegóły miejsca")
     );
     if (!place) {
       details.append(
-        el("p", "Wybierz miejsce na mapie, aby zobaczyć jego cechy i dostępność.")
+        element(
+          "p",
+          "Wybierz miejsce na mapie lub z listy, aby zobaczyć jego cechy i dostępność."
+        )
       );
       return;
     }
-    const list = el("dl");
+    const list = element("dl");
     const values = {
-      Poziom: place.level_name,
+      Piętro: `${String(place.floor).replace("-", "−")} · ${CemeteryScene.themes[place.floor].name}`,
+      Strefa: place.level_name,
       Sektor: place.sector,
       Rząd: place.row,
       Numer: place.number,
       Typ: labels[place.kind],
       Pojemność: labels[place.capacity],
       Grunt: labels[place.ground],
-      Dostępność: labels[place.status],
+      Dostępność: labels[place.status] || "Niedostępne",
     };
-    Object.entries(values).forEach(([key, value]) =>
-      list.append(el("dt", key), el("dd", String(value)))
+    Object.entries(values).forEach(([name, value]) =>
+      list.append(element("dt", name), element("dd", String(value)))
     );
     details.append(list);
     if (place.status !== "available") {
-      details.append(el("p", "To miejsce nie jest dostępne do rezerwacji."));
-    } else if (root.dataset.booking) {
-      const link = el("a", "Przejdź do rezerwacji →", "booking-link");
-      const url = new URL(root.dataset.booking, location.origin);
-      url.searchParams.set("miejsce", place.id);
-      link.href = url;
-      details.append(link);
-    } else {
-      details.append(
-        el(
-          "p",
-          "Miejsce jest wolne. Rezerwacje online będą dostępne po uruchomieniu modułu rezerwacji."
-        )
-      );
+      details.append(element("p", "To miejsce nie jest dostępne do rezerwacji."));
+      return;
     }
+    const link = element("a", "Przejdź do rezerwacji →", "booking-link");
+    const url = new URL(root.dataset.booking, location.origin);
+    // Sam ID uruchamia w konfiguratorze pakiet „Wybrane miejsce” i krok 3.
+    url.searchParams.set("miejsce", place.id);
+    link.href = url;
+    details.append(link);
   }
+
   function select(place) {
     selected = String(place.id);
-    writeUrl();
-    grid
-      .querySelectorAll(".place")
-      .forEach((button) =>
-        button.setAttribute("aria-pressed", String(button.dataset.id === selected))
-      );
     showDetails(place);
     scene.select(selected);
+    writeUrl(true);
   }
-  function render() {
-    grid.replaceChildren();
-    const groups = new Map();
-    loaded.forEach((place) => {
-      if (!groups.has(place.level)) groups.set(place.level, new Map());
-      const sectors = groups.get(place.level);
-      if (!sectors.has(place.sector)) sectors.set(place.sector, new Map());
-      const rows = sectors.get(place.sector);
-      if (!rows.has(place.row)) rows.set(place.row, []);
-      rows.get(place.row).push(place);
-    });
-    groups.forEach((sectors, level) => {
-      grid.append(
-        el("h2", loaded.find((p) => p.level === level).level_name, "level-title")
-      );
-      sectors.forEach((rows, sector) => {
-        const section = el("section", "", "sector");
-        section.append(el("h3", "Sektor " + sector));
-        rows.forEach((places, row) => {
-          const line = el("div", "", "place-row");
-          line.append(el("span", "Rząd " + row, "row-label"));
-          for (let number = 1; number <= 8; number++) {
-            const place = places.find((p) => p.number === number);
-            if (!place) {
-              const blank = el("span");
-              blank.setAttribute("aria-hidden", "true");
-              line.append(blank);
-              continue;
-            }
-            const button = el(
-              "button",
-              `${place.number} · ${marks[place.status]}`,
-              "place " + place.status
-            );
-            button.type = "button";
-            button.dataset.id = place.id;
-            button.setAttribute(
-              "aria-label",
-              `Miejsce ${place.code}, ${labels[place.status]}. Pokaż szczegóły`
-            );
-            button.setAttribute("aria-pressed", String(String(place.id) === selected));
-            button.addEventListener("click", () => select(place));
-            line.append(button);
-          }
-          section.append(line);
-        });
-        grid.append(section);
-      });
-    });
-    const place = loaded.find((p) => String(p.id) === selected);
-    if (!place) selected = null;
-    showDetails(place);
-    scene.update(loaded, selected);
-    writeUrl();
-    if (!loaded.length)
-      grid.append(
-        el(
-          "p",
-          "Brak miejsc spełniających warunki. Wyczyść filtry lub wybierz inne kryteria."
-        )
-      );
-    status.textContent = `Znaleziono: ${loaded.length} · wolne: ${loaded.filter((p) => p.status === "available").length}`;
+
+  function render(push = false) {
+    const onFloor = allPlaces.filter((place) => place.floor === floor);
+    const visible = onFloor.filter((place) =>
+      fields.every((field) => !field.value || String(place[field.name]) === field.value)
+    );
+    const chosen = visible.find((place) => String(place.id) === selected);
+    if (!chosen) selected = null;
+    floors.update(floor);
+    scene.update(visible, selected, onFloor, floor);
+    showDetails(chosen);
+    status.textContent = `Piętro ${String(floor).replace("-", "−")} · znaleziono: ${visible.length} · wolne: ${visible.filter((place) => place.status === "available").length}`;
+    writeUrl(push);
   }
+
   async function load() {
     controller?.abort();
     const current = new AbortController();
     controller = current;
-    grid.setAttribute("aria-busy", "true");
-    grid.replaceChildren();
-    scene.update([], null);
-    showDetails(null);
+    panel.setAttribute("aria-busy", "true");
+    panel.inert = true;
+    fields.forEach((field) => {
+      field.disabled = true;
+    });
     error.hidden = retry.hidden = true;
     status.textContent = "Ładowanie miejsc…";
     const timeout = setTimeout(() => current.abort(), 15000);
     try {
-      const response = await fetch(root.dataset.api + "?" + params(), {
+      // Pełny, niewielki zbiór pozwala zachować geometrię miejsc po filtrowaniu.
+      const response = await fetch(root.dataset.api, {
         signal: current.signal,
         cache: "no-store",
       });
-      if (!response.ok) throw new Error("API error");
+      if (!response.ok) throw new Error("Nie udało się pobrać miejsc");
       const data = await response.json();
+      if (!Array.isArray(data.places)) throw new Error("Nieprawidłowe dane mapy");
       if (controller !== current) return;
-      loaded = data.places;
+      allPlaces = data.places;
+      restore();
       render();
-    } catch (err) {
+    } catch (failure) {
       if (controller !== current) return;
+      allPlaces = [];
+      scene.update([], null, [], floor);
+      showDetails(null);
       status.textContent = "Mapa jest chwilowo niedostępna.";
       error.hidden = retry.hidden = false;
     } finally {
       clearTimeout(timeout);
-      if (controller === current) grid.setAttribute("aria-busy", "false");
+      if (controller === current) {
+        panel.setAttribute("aria-busy", "false");
+        panel.inert = false;
+        fields.forEach((field) => {
+          field.disabled = false;
+        });
+      }
     }
   }
+
   form.addEventListener("submit", (event) => event.preventDefault());
   form.addEventListener("change", () => {
     selected = null;
-    writeUrl(true);
-    load();
+    populateFilters(filterValues());
+    render(true);
   });
   form.addEventListener("reset", (event) => {
     event.preventDefault();
-    fields.forEach((field) => {
-      field.value = "";
-    });
     selected = null;
-    writeUrl(true);
-    load();
+    populateFilters({});
+    render(true);
   });
+  scene.sector.addEventListener("change", () => {
+    const place = scene.visible()[0];
+    if (!place) return;
+    selected = null;
+    populateFilters({
+      ...filterValues(),
+      level: String(place.level),
+      sector: place.sector,
+    });
+    render(true);
+  });
+  for (const mode of ["2d", "3d"]) {
+    document.querySelector(`#view-${mode}`).addEventListener("click", () => {
+      scene.setMode(mode);
+      writeUrl(true);
+    });
+  }
   window.addEventListener("popstate", () => {
     restore();
-    load();
+    render();
   });
   retry.addEventListener("click", load);
   document.querySelector("#refresh").addEventListener("click", load);
-  restore();
   load();
 })();

@@ -7,12 +7,20 @@
     <title>Mapa miejsc | Horyzont</title>
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
     <link rel="stylesheet" href="{% static 'css/map.css' %}">
+    <script defer src="{% static 'js/map-layout.js' %}"></script>
     <script defer src="{% static 'js/map-3d.js' %}"></script>
+    <script defer src="{% static 'js/map-floors.js' %}"></script>
     <script defer src="{% static 'js/map.js' %}"></script>
   </head>
   <body>
     <a class="skip-link" href="#map-main">Przejdź do mapy</a>
-    <header class="site-header"><a class="brand" href="{% url 'home' %}"><span class="brand-mark">✦</span><span><strong>Horyzont</strong><small>miejsce pamięci</small></span></a><a href="{% url 'home' %}">← Strona główna</a></header>
+    <header class="site-header map-header">
+      <a class="brand" href="{% url 'home' %}"><span class="brand-mark">✦</span><span><strong>Horyzont</strong><small>miejsce pamięci</small></span></a>
+      <nav class="header-links" aria-label="Nawigacja konta">
+        <a href="{% url 'home' %}">← Strona główna</a>
+        {% include "cemetery/_header_links.html" %}
+      </nav>
+    </header>
     <main id="map-main"
           class="map-page"
           data-api="{% url 'places' %}"
@@ -25,29 +33,18 @@
       </div>
       <form id="filters" class="filters" aria-label="Filtry miejsc">
         <label>
-          Poziom<select name="level">
-          <option value="">Wszystkie poziomy</option>
-          <option value="1">01 · Ogród Pamięci</option>
-          <option value="2">02 · Taras Ciszy</option>
-          <option value="3">03 · Galeria Wspomnień</option>
+          Strefa<select name="level">
+          <option value="">Wszystkie strefy</option>
           </select>
         </label>
         <label>
           Sektor<select name="sector">
           <option value="">Wszystkie</option>
-          <option>A</option>
-          <option>B</option>
-          <option>C</option>
-          <option>D</option>
           </select>
         </label>
         <label>
           Rząd<select name="row">
           <option value="">Wszystkie</option>
-          <option>1</option>
-          <option>2</option>
-          <option>3</option>
-          <option>4</option>
           </select>
         </label>
         <label>
@@ -107,7 +104,9 @@
                     class="quiet-button"
                     aria-pressed="false">Mapa 2D</button>
           </div>
-          <section id="scene-panel" aria-label="Trójwymiarowa mapa">
+          <section id="scene-panel"
+                   aria-label="Interaktywna mapa sektora"
+                   aria-busy="true">
             <div class="scene-toolbar">
               <label>
                 Oglądany sektor
@@ -128,17 +127,51 @@
               <button id="zoom-out" type="button" class="quiet-button" aria-label="Oddal">−</button>
               <button id="reset-camera" type="button" class="quiet-button">Reset widoku</button>
             </div>
-            <p class="scene-help" id="scene-help">Przeciągnij, aby obrócić · przyciski +/− przybliżają · kliknij nagrobek. Klawiatura: strzałki obracają, Tab wybiera miejsca poniżej.</p>
-            <canvas id="cemetery-scene"
-                    tabindex="0"
-                    aria-label="Mapa 3D sektora"
-                    aria-describedby="scene-help"></canvas>
+            <p class="scene-help" id="scene-help">Przeciągnij, aby obrócić · kółko myszy lub +/− zmienia skalę. Strzałki obracają, Home przywraca widok. Miejsca możesz wybrać z listy poniżej.</p>
+            <div class="scene-viewport" data-floor="0">
+              <canvas id="cemetery-scene"
+                      tabindex="0"
+                      role="img"
+                      aria-label="Mapa 3D sektora"
+                      aria-describedby="scene-help"></canvas>
+              <div class="scene-caption" aria-hidden="true">
+                <span id="scene-mode-label">PERSPEKTYWA 3D</span>
+                <strong id="scene-floor-label">Powierzchnia</strong>
+              </div>
+              <div id="floor-picker" class="floor-picker" data-open="false">
+                <div id="floor-options"
+                     class="floor-options"
+                     aria-label="Wybierz piętro"
+                     role="group"
+                     inert>
+                  {% for value, name in floors %}
+                    <button type="button"
+                            class="floor-option"
+                            data-floor="{{ value }}"
+                            aria-label="Piętro {{ value }} · {{ name }}"
+                            aria-pressed="false">
+                      <span>{{ name }}</span><b>{{ value }}</b>
+                    </button>
+                  {% endfor %}
+                </div>
+                <button id="floor-toggle"
+                        class="floor-toggle"
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="floor-options"
+                        aria-label="Wybierz piętro. Obecne piętro: 0">
+                  <span aria-hidden="true">PIĘTRO</span><strong id="floor-current">0</strong>
+                </button>
+              </div>
+            </div>
             <p id="scene-empty" hidden>Brak miejsc w wybranych filtrach.</p>
-            <div id="scene-choices"
-                 class="scene-choices"
-                 aria-label="Wybór miejsca w sektorze"></div>
+            <details class="scene-list">
+              <summary>Lista miejsc w oglądanym sektorze <span id="scene-count"></span></summary>
+              <div id="scene-choices"
+                   class="scene-choices"
+                   aria-label="Wybór miejsca w sektorze"></div>
+            </details>
           </section>
-          <div id="places" hidden aria-busy="true"></div>
           <noscript>Włącz JavaScript, aby korzystać z interaktywnej mapy.</noscript>
         </section>
         <aside id="details"
