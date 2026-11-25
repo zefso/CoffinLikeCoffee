@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group, User
 from django.db.models import Count
 from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .models import Place
 
@@ -93,6 +94,13 @@ def register(request):
             user.groups.add(client_group)
             login(request, user)
             messages.success(request, "Konto zostało utworzone.")
+            next_url = request.POST.get("next") or request.GET.get("next")
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(next_url)
             return redirect("my_reservations")
     else:
         form = ClientRegistrationForm()
