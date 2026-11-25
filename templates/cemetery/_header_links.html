@@ -5,6 +5,6 @@
         <button type="submit">Wyloguj</button>
     </form>
 {% else %}
-    <a href="{% url 'login' %}">Logowanie</a>
-    <a href="{% url 'register' %}">Rejestracja</a>
+    <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}">Zaloguj</a>
+    <a href="{% url 'register' %}?next={{ request.get_full_path|urlencode }}">Rejestracja</a>
 {% endif %}

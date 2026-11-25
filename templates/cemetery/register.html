@@ -9,6 +9,10 @@
 </head>
 <body class="auth-page">
 
+<div class="auth-back">
+    <a href="{% url 'home' %}">← Strona główna</a>
+</div>
+
 <div class="auth-card">
     <h2 class="auth-title">Rejestracja</h2>
 
@@ -28,6 +32,7 @@
 
     <form method="post" class="auth-form">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
 
         <div class="form-group">
             <label for="id_first_name">Imię:</label>

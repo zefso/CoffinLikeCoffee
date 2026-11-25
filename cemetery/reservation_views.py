@@ -2,6 +2,7 @@ import json
 
 from django.db import transaction
 from django.contrib import messages
+from .permissions import is_manager
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -125,43 +126,9 @@ def my_reservations(request):
 @login_required
 @require_POST
 def reservation_cancel(request, pk):
-    with transaction.atomic():
-        reservation = get_object_or_404(
-            Reservation.objects.select_for_update().select_related("place"),
-            pk=pk,
-        )
-
-        # Підставте фактичне поле моделі Reservation замість "client" / "user"
-        owner_id = (
-            getattr(reservation, "user_id", None)
-            or getattr(reservation, "client_id", None)
-            or getattr(reservation, "owner_id", None)
-        )
-        is_staff = request.user.is_superuser or request.user.groups.filter(
-            name__in=["Zarządca", "Administrator"]
-        ).exists()
-
-        if owner_id is not None and owner_id != request.user.id and not is_staff:
-            messages.error(request, "Nie masz uprawnień do anulowania tej rezerwacji.")
-            return redirect("my_reservations")
-
-        place = reservation.place
-        if hasattr(reservation, "status"):
-            reservation.status = "cancelled"
-            reservation.save(update_fields=["status"])
-            has_other_active = (
-                Reservation.objects.filter(place=place)
-                .exclude(pk=reservation.pk)
-                .exclude(status="cancelled")
-                .exists()
-            )
-        else:
-            reservation.delete()
-            has_other_active = Reservation.objects.filter(place=place).exists()
-
-        if place and not has_other_active and getattr(place, "status", None) != "occupied":
-            place.status = "free"
-            place.save(update_fields=["status"])
-
-    messages.success(request, "Rezerwacja została anulowana.")
-    return redirect("my_reservations")
+    filters = {"pk": pk, "status": Reservation.Status.ACTIVE}
+    if not is_manager(request.user):
+        filters["customer"] = request.user
+    reservation = get_object_or_404(Reservation, **filters)
+    cancel_reservation(reservation)
+    return redirect(f"{reverse('my_reservations')}?anulowana={pk}")

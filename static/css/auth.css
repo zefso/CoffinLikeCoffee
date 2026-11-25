@@ -91,3 +91,22 @@ body.auth-page {
   font-size: 0.875rem;
   margin-bottom: 16px;
 }
+.auth-back {
+  position: fixed;
+  top: 20px;
+  left: 24px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--text-muted, var(--muted, #555));
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.auth-back:hover {
+  color: var(--text-color, var(--ink, #111));
+  text-decoration: underline;
+}

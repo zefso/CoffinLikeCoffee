@@ -9,6 +9,10 @@
 </head>
 <body class="auth-page">
 
+    <div class="auth-back">
+    <a href="{% url 'home' %}">← Strona główna</a>
+    </div>
+
 <div class="auth-card">
     <h2 class="auth-title">Logowanie</h2>
 
@@ -35,7 +39,7 @@
     </form>
 
     <p class="auth-switch">
-        Nie masz jeszcze konta? <a href="{% url 'register' %}">Zarejestruj się</a>
+        <a href="{% url 'register' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}">Zarejestruj się</a>
     </p>
 </div>
 
